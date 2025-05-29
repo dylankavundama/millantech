@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:stocktrue/Boutique/fullScreen.dart';
 import 'package:url_launcher/url_launcher.dart'; // Ensure url_launcher is in pubspec.yaml
 import '../ip.dart'; // Ensure this path is correct and contains currentip()
 
@@ -102,21 +103,32 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      "${dataens[0]["image"]}",
-                      height: 280,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 280,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.broken_image, size: 80, color: Colors.grey),
-                      ),
-                    ),
-                  ),
+  ClipRRect(
+  borderRadius: BorderRadius.circular(12),
+  child: GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FullscreenImagePage(imageUrl: dataens[0]["image"]),
+        ),
+      );
+    },
+    child: Image.network(
+      "${dataens[0]["image"]}",
+      height: 280,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        height: 280,
+        width: double.infinity,
+        color: Colors.grey[200],
+        child: const Icon(Icons.broken_image, size: 80, color: Colors.grey),
+      ),
+    ),
+  ),
+),
+
                   const SizedBox(height: 20),
                   Text(
                     dataens[0]["designation"] ?? "Sans nom",
