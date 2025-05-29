@@ -1,15 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart'; // Ensure url_launcher is in pubspec.yaml
+import '../ip.dart'; // Ensure this path is correct and contains currentip()
 
 class DetailproduitUser extends StatefulWidget {
   final String code;
   final String desigantion;
-  // ignore: non_constant_identifier_names
   final String Prix;
   final String imageUrl; // Image filename passed from Boutique
 
-  const DetailproduitUser(this.code, this.desigantion, this.Prix, this.imageUrl,
-      {super.key});
+  const DetailproduitUser(this.code, this.desigantion, this.Prix, this.imageUrl, {super.key});
 
   @override
   State<DetailproduitUser> createState() => _DetailproduitUserState();
@@ -17,10 +18,30 @@ class DetailproduitUser extends StatefulWidget {
 
 class _DetailproduitUserState extends State<DetailproduitUser> {
   List dataens = [];
+ 
 
   @override
   void initState() {
     super.initState();
+    getrecords();
+  }
+
+  Future<void> getrecords() async {
+    final response = await http.post(
+      Uri.parse("$Adress_IP/PRODUIT/gettrie.php"),
+      body: {"id": widget.code},
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        dataens = jsonDecode(response.body);
+      });
+    } else {
+      // You might want a more specific error message here
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Erreur de chargement du produit")),
+      );
+    }
   }
 
   void commanderViaWhatsApp() async {
@@ -28,12 +49,13 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
     final fullImageUrl = "${widget.imageUrl}";
 
     // Construct the message with all product details, including the image URL
-    final message = Uri.encodeComponent("Bonjour Phonexa \n\n"
-        "Je souhaite commander le produit : ${widget.desigantion}\n"
-        "Code Produit : ${widget.code}\n"
-        "Prix : ${widget.Prix} \$ \n\n"
-        //  "Photo du produit : $fullImageUrl" // Include the image URL here
-        );
+    final message = Uri.encodeComponent(
+      "Bonjour Phonexa \n\n"
+      "Je souhaite commander le produit : ${widget.desigantion}\n"
+      "Code Produit : ${widget.code}\n"
+      "Prix : ${widget.Prix} \$ \n\n"
+    //  "Photo du produit : $fullImageUrl" // Include the image URL here
+    );
 
     final url = "https://wa.me/+243819782016?text=$message";
 
@@ -41,9 +63,7 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
       await launchUrl(Uri.parse(url));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                "Impossible d'ouvrir WhatsApp. Assurez-vous que l'application est installée.")),
+        const SnackBar(content: Text("Impossible d'ouvrir WhatsApp. Assurez-vous que l'application est installée.")),
       );
     }
   }
@@ -93,8 +113,7 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                         height: 280,
                         width: double.infinity,
                         color: Colors.grey[200],
-                        child: const Icon(Icons.broken_image,
-                            size: 80, color: Colors.grey),
+                        child: const Icon(Icons.broken_image, size: 80, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -122,8 +141,8 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                           buildRowInfo("Quantité disponible :",
                               dataens[0]["quantite"]?.toString() ?? 'N/A'),
                           const Divider(),
-                          buildRowInfo("Prix d'achat :",
-                              "${dataens[0]["prixu"]?.toString() ?? '0'} \$"),
+                          buildRowInfo(
+                              "Prix d'achat :", "${dataens[0]["prixu"]?.toString() ?? '0'} \$"),
                         ],
                       ),
                     ),
@@ -139,8 +158,7 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
-                      icon:
-                          const Icon(Icons.shopping_cart, color: Colors.white),
+                      icon: const Icon(Icons.shopping_cart, color: Colors.white),
                       label: const Text("Commander via WhatsApp",
                           style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
