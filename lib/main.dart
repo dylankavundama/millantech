@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
         useMaterial3: true,
       ),
-      title: 'StockTrue',
+      title: 'Gebutik',
       debugShowCheckedModeBanner: false,
       home: showAuthPage
           ? const FirstLaunchWrapper()

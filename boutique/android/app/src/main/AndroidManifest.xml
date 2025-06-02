@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.phonexa">
+    package="com.phx.boutique">
     <application
         android:label="Phonexa"
         android:name="${applicationName}"

@@ -201,6 +201,12 @@ class _AuthPageState extends State<AuthPage> {
                   _buildRoleSwitch(),
                   const SizedBox(height: 16),
                   _buildErrorMessage(),
+                  const Center(
+                      child: Text(
+                    "Copyright©Macmillan 2025",
+                    style: TextStyle(),
+                    textAlign: TextAlign.center,
+                  ))
                 ],
               ),
             ),

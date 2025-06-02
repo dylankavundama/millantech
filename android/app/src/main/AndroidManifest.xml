@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.stocktrue">
+    package="com.gebutik">
    <application
-        android:label="Phonexa Gestion"
+        android:label="Gebutik"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
