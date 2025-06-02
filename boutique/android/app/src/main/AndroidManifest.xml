@@ -2,6 +2,7 @@
     package="com.phx.boutique">
     <application
         android:label="Phonexa"
+          android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

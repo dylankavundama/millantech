@@ -45,7 +45,7 @@ class _BoutiqueState extends State<Boutique> {
     setState(() {
       isLoading = true;
     });
-    var url = "$Adress_IP/produit/getproduit.php";
+    var url = "$Adress_IP/PRODUIT/getproduit.php";
     try {
       var response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {

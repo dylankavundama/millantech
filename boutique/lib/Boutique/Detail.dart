@@ -31,7 +31,7 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
 
   Future<void> getrecords() async {
     final response = await http.post(
-      Uri.parse("$Adress_IP/produit/gettrie.php"),
+      Uri.parse("$Adress_IP/PRODUIT/gettrie.php"),
       body: {"id": widget.code},
     );
 
