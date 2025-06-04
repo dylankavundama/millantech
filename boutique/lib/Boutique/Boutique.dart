@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/Boutique/Detail.dart';
 
@@ -30,6 +31,7 @@ class _BoutiqueState extends State<Boutique> {
   void initState() {
     super.initState();
     getrecord();
+    _loadBannerAd();
     searchController.addListener(() {
       filterProducts(searchController.text);
     });
@@ -38,6 +40,8 @@ class _BoutiqueState extends State<Boutique> {
   @override
   void dispose() {
     searchController.dispose();
+      _bannerAd?.dispose();
+    super.dispose();
     super.dispose();
   }
 
@@ -45,7 +49,7 @@ class _BoutiqueState extends State<Boutique> {
     setState(() {
       isLoading = true;
     });
-    var url = "$Adress_IP/produit/getproduit.php";
+    var url = "$Adress_IP/PRODUIT/getproduit.php";
     try {
       var response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -105,6 +109,30 @@ class _BoutiqueState extends State<Boutique> {
     await getrecord();
   }
 
+//pub
+
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-8882238368661853/1006164136',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+ 
+
   @override
   Widget build(BuildContext context) {
     final screenH = MediaQuery.of(context).size.height;
@@ -114,6 +142,14 @@ class _BoutiqueState extends State<Boutique> {
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: _buildBody(screenH, screenW),
+       bottomNavigationBar: _isAdLoaded
+    ? Container(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      )
+    : const SizedBox.shrink(),
+
     );
   }
 
@@ -188,9 +224,7 @@ class _BoutiqueState extends State<Boutique> {
       color: Colors.orangeAccent,
       child: isLoading
           ? Center(
-              child: Image.network(
-                  height: 150,
-                  'https://i.pinimg.com/originals/66/22/ab/6622ab37c6db6ac166dfec760a2f2939.gif'),
+              child: Image.asset(height: 130, 'assets/ld.gif'),
             )
           : filteredUserdata.isEmpty && !isLoading
               ? Center(

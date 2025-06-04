@@ -2,16 +2,17 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/Boutique/fullScreen.dart';
-import 'package:url_launcher/url_launcher.dart'; // Ensure url_launcher is in pubspec.yaml
-import '../ip.dart'; // Ensure this path is correct and contains currentip()
+import 'package:url_launcher/url_launcher.dart';
+import '../ip.dart';
 
 class DetailproduitUser extends StatefulWidget {
   final String code;
   final String desigantion;
   final String Prix;
-  final String imageUrl; // Image filename passed from Boutique
+  final String imageUrl;
 
   const DetailproduitUser(this.code, this.desigantion, this.Prix, this.imageUrl,
       {super.key});
@@ -22,11 +23,14 @@ class DetailproduitUser extends StatefulWidget {
 
 class _DetailproduitUserState extends State<DetailproduitUser> {
   List dataens = [];
+  List recentProducts = [];
 
   @override
   void initState() {
     super.initState();
     getrecords();
+    _loadBannerAd();
+    getRecentProducts();
   }
 
   Future<void> getrecords() async {
@@ -40,35 +44,45 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
         dataens = jsonDecode(response.body);
       });
     } else {
-      // You might want a more specific error message here
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Erreur de chargement du produit")),
       );
     }
   }
 
-  void commanderViaWhatsApp() async {
-    // Construct the full image URL from the image filename
-    final fullImageUrl = "${widget.imageUrl}";
+  Future<void> getRecentProducts() async {
+    final response =
+        await http.get(Uri.parse("$Adress_IP/PRODUIT/getproduit.php"));
 
-    // Construct the message with all product details, including the image URL
+    if (response.statusCode == 200) {
+      final List<dynamic> products = jsonDecode(response.body);
+      setState(() {
+        recentProducts = products.where((p) => p["id"] != widget.code).toList();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Erreur de chargement des produits récents")),
+      );
+    }
+  }
+
+  void commanderViaWhatsApp() async {
     final message = Uri.encodeComponent("Bonjour Phonexa \n\n"
         "Je souhaite commander le produit : ${widget.desigantion}\n"
         "Code Produit : ${widget.code}\n"
-        "Prix : ${widget.Prix} \$ \n\n"
-        //  "Photo du produit : $fullImageUrl" // Include the image URL here
-        );
+        "Prix : ${widget.Prix} \$ \n");
 
     final url = "https://wa.me/+243819782016?text=$message";
 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
-      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                "Impossible d'ouvrir WhatsApp. Assurez-vous que l'application est installée.")),
+          content: Text(
+              "Impossible d'ouvrir WhatsApp. Assurez-vous que l'application est installée."),
+        ),
       );
     }
   }
@@ -82,6 +96,34 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
         const SnackBar(content: Text("Impossible de passer l'appel.")),
       );
     }
+  }
+
+//pub
+
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-8882238368661853/1006164136',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
   }
 
   @override
@@ -99,13 +141,15 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
       ),
       body: dataens.isEmpty
           ? Center(
-              child: Image.network(
-                  height: 150,
-                  'https://i.pinimg.com/originals/66/22/ab/6622ab37c6db6ac166dfec760a2f2939.gif'),
+              child: Image.asset(
+                height: 130,
+                'assets/ld.gif',
+              ),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -180,7 +224,79 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                       label: const Text("Commander via WhatsApp",
                           style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
-                  )
+                  ),
+                  const SizedBox(height: 30),
+                  if (recentProducts.isNotEmpty) ...[
+                    const Text(
+                      "Derniers produits",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                                        if (_isAdLoaded)
+                      Container(
+                        margin: const EdgeInsets.only(top: 20),
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: _bannerAd!.size.width.toDouble(),
+                          height: _bannerAd!.size.height.toDouble(),
+                          child: AdWidget(ad: _bannerAd!),
+                        ),
+                      ),
+                    SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recentProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = recentProducts[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DetailproduitUser(
+                                    product["code"],
+                                    product["designation"],
+                                    product["prixu"],
+                                    product["image"],
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 140,
+                              margin: const EdgeInsets.only(right: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      product["image"],
+                                      height: 100,
+                                      width: 140,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    product["designation"] ?? "",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  Text("${product["prixu"]} \$"),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                  ],
                 ],
               ),
             ),
