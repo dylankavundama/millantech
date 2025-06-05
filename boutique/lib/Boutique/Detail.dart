@@ -233,7 +233,7 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                           TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                                        if (_isAdLoaded)
+                    if (_isAdLoaded)
                       Container(
                         margin: const EdgeInsets.only(top: 20),
                         alignment: Alignment.center,
@@ -256,10 +256,10 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => DetailproduitUser(
-                                    product["code"],
-                                    product["designation"],
-                                    product["prixu"],
-                                    product["image"],
+                                    product["id_produit"].toString(),
+                                    product["designation"].toString(),
+                                    product["prixu"].toString(),
+                                    product["image"].toString(),
                                   ),
                                 ),
                               );
@@ -295,7 +295,6 @@ class _DetailproduitUserState extends State<DetailproduitUser> {
                         },
                       ),
                     ),
-
                   ],
                 ],
               ),
