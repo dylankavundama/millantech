@@ -1,12 +1,17 @@
 import 'dart:convert';
-
-import 'package:flutter/cupertino.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pdf/pdf.dart' as pp;
+// import 'package:pdf/pdf.dart';
 import 'package:stocktrue/Produits/mobile.dart';
 import 'package:stocktrue/ip.dart';
 import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:printing/printing.dart';
 
 // ignore: must_be_immutable
 class Lisventedet extends StatefulWidget {
@@ -68,50 +73,121 @@ class _LisventedetState extends State<Lisventedet> {
   }
 
   Future<void> _createPDF(String date, String nom, String code) async {
-    List m = await fetchdata();
-    PdfDocument document = PdfDocument();
-    final page = document.pages.add();
-    PdfGrid grid = PdfGrid();
-    grid.style = PdfGridStyle(
-        font: PdfStandardFont(PdfFontFamily.helvetica, 25),
-        cellPadding: PdfPaddings(left: 2, right: 2, top: 2, bottom: 2));
+    print('Impression PDF déclenchée');
 
+    // Données
+    List<Map<String, dynamic>> data = await fetchdata();
+
+    // Création du document
+    final PdfDocument document = PdfDocument();
+    final PdfPage page = document.pages.add();
+    final Size pageSize = page.getClientSize();
+
+    final PdfGraphics graphics = page.graphics;
+
+    final PdfFont titleFont =
+        PdfStandardFont(PdfFontFamily.helvetica, 24, style: PdfFontStyle.bold);
+    final PdfFont contentFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
+
+    double top = 0;
+
+    // 🔷 Logo (assurez-vous que 'assets/logo.png' existe dans pubspec.yaml)
+    final ByteData bytes = await rootBundle.load('assets/logo.png');
+    final Uint8List imageData = bytes.buffer.asUint8List();
+    final PdfBitmap logo = PdfBitmap(imageData);
+
+    graphics.drawImage(logo, const Rect.fromLTWH(0, 0, 100, 100));
+
+    // 🔷 Infos entreprise
+    graphics.drawString(
+      'PRO CLEANERS\n60 Faubourg Saint Honoré\n75116 Paris\nFrance\nprocleaners@live.com',
+      contentFont,
+      bounds: const Rect.fromLTWH(110, 0, 250, 100),
+    );
+
+    // 🔶 Infos client
+    graphics.drawString(
+      'FACTURÉ À:\n$nom\n82 rue Sadi Carnot\n75116 Paris\nFrance',
+      contentFont,
+      bounds: Rect.fromLTWH(pageSize.width - 200, 0, 200, 100),
+    );
+
+    top += 120;
+
+    // 🔷 Détails facture
+    graphics.drawString(
+      'Facture N° : $code\nDate : $date\nÉchéance : 14 jours\nDate de livraison : $date',
+      contentFont,
+      bounds: Rect.fromLTWH(0, top, 300, 80),
+    );
+
+    top += 90;
+
+    // 🔶 Titre principal
+    graphics.drawString(
+      'FACTURE',
+      titleFont,
+      bounds: Rect.fromLTWH(pageSize.width / 2 - 50, top, 200, 40),
+    );
+
+    top += 50;
+
+    // 🔷 Tableau
+    final PdfGrid grid = PdfGrid();
     grid.columns.add(count: 4);
     grid.headers.add(1);
 
-    PdfGridRow header = grid.headers[0];
+    final PdfGridRow header = grid.headers[0];
     header.cells[0].value = 'Produits';
-    header.cells[1].value = 'Quantite';
-    header.cells[2].value = 'Prix u';
-    header.cells[3].value = 'PT';
+    header.cells[1].value = 'Quantité';
+    header.cells[2].value = 'Prix U (€)';
+    header.cells[3].value = 'PT (€)';
 
-    int i = 0;
-    for (Map<String, dynamic> item in m) {
-      PdfGridRow row = grid.rows.add();
+    double total = 0;
 
-      row.cells[i].value = item['produit'];
-      row.cells[i + 1].value = item['quantite'].toString();
-      row.cells[i + 2].value = item['prixu'];
-      row.cells[i + 3].value = item['prix_total'];
+    for (final item in data) {
+      final PdfGridRow row = grid.rows.add();
+      row.cells[0].value = item['produit'];
+      row.cells[1].value = item['quantite'].toString();
+      row.cells[2].value = item['prixu'].toString();
+      row.cells[3].value = item['prix_total'].toString();
+
+      total += double.tryParse(item['prix_total'].toString()) ?? 0;
     }
-    page.graphics.drawString(
-      'Facture',
-      PdfStandardFont(PdfFontFamily.helvetica, 60, style: PdfFontStyle.bold),
-    );
 
     grid.style = PdfGridStyle(
-        cellPadding: PdfPaddings(left: 2, right: 3, top: 4, bottom: 2),
-        backgroundBrush: PdfBrushes.blanchedAlmond,
-        textBrush: PdfBrushes.black,
-        font: PdfStandardFont(PdfFontFamily.timesRoman, 25));
-//Draw
-    grid.draw(
-        page: document.pages.add(), bounds: const Rect.fromLTWH(10, 0, 0, 0));
+      font: PdfStandardFont(PdfFontFamily.helvetica, 12),
+      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
+    );
 
-    List<int> bytes = await document.save();
+// Appliquer le style à chaque cellule d’en-tête manuellement
+    for (int i = 0; i < header.cells.count; i++) {
+      final cell = header.cells[i];
+      cell.style.backgroundBrush = PdfBrushes.lightGray;
+      cell.style.textBrush = PdfBrushes.black;
+      cell.style.font = PdfStandardFont(PdfFontFamily.helvetica, 14,
+          style: PdfFontStyle.bold);
+    }
+
+    grid.draw(
+      page: page,
+      bounds: Rect.fromLTWH(0, top, pageSize.width, 0),
+    );
+
+    // 🔶 Total à payer
+    graphics.drawString(
+      'MONTANT TOTAL (EUR): €${total.toStringAsFixed(2)}',
+      PdfStandardFont(PdfFontFamily.helvetica, 16, style: PdfFontStyle.bold),
+      bounds: Rect.fromLTWH(0, top + 150, 400, 30),
+    );
+
+    // 🔄 Enregistrement
+    final Uint8List bytesFinal = Uint8List.fromList(await document.save());
     document.dispose();
 
-    saveAndLaunchFile(bytes, 'Output.pdf');
+    await Printing.layoutPdf(
+      onLayout: (pp.PdfPageFormat format) async => bytesFinal,
+    );
   }
 
   void sms(String ms) {
@@ -409,4 +485,14 @@ class _LisventedetState extends State<Lisventedet> {
       ),
     );
   }
+}
+
+// Fonction utilitaire pour sauvegarder et ouvrir le PDF
+Future<void> saveAndLaunchFile(List<int> bytes, String fileName) async {
+  final directory = await getApplicationDocumentsDirectory();
+  final path = directory.path;
+  final file = File('$path/$fileName');
+  await file.writeAsBytes(bytes, flush: true);
+  print('Sauvegarde du PDF à : $path/$fileName');
+  await OpenFile.open(file.path);
 }

@@ -119,7 +119,8 @@ class _AchatsState extends State<Achats> {
       Uri ulr = Uri.parse(url);
       var request = http.MultipartRequest('POST', ulr);
       request.fields['id_approvionnement'] = va;
-      request.fields['fournisseur_id'] = v; // Use the passed value 'v' for supplier_id
+      request.fields['fournisseur_id'] =
+          v; // Use the passed value 'v' for supplier_id
       var res = await request.send();
       var response = await http.Response.fromStream(res);
 
@@ -197,10 +198,6 @@ class _AchatsState extends State<Achats> {
   }
 
   Widget buildEditDialog(int index) {
-    // Initialize selectedvalue for the dropdown when opening the edit dialog
-    // based on the current item's fournisseur_id.
-    // Ensure that selectedvalue is set to the current item's supplier ID
-    // before the dialog is built to show the correct pre-selected value.
     if (data[index]["fournisseur_id"] != null) {
       selectedvalue = data[index]["fournisseur_id"];
       selectedname = data[index]["fournisseur_id"].toString();
@@ -265,10 +262,12 @@ class _AchatsState extends State<Achats> {
             const SizedBox(height: 15),
             ElevatedButton.icon(
               icon: const Icon(Icons.save_alt_outlined, color: Colors.black),
-              label: const Text("Modifier", style: TextStyle(color: Colors.black)),
+              label:
+                  const Text("Modifier", style: TextStyle(color: Colors.black)),
               onPressed: () {
                 if (selectedname != null) {
-                  updatedatas(data[index]["id_approvisionnement"].toString(), selectedname!);
+                  updatedatas(data[index]["id_approvisionnement"].toString(),
+                      selectedname!);
                 } else {
                   bar("Veuillez sélectionner un fournisseur.");
                 }
@@ -304,7 +303,9 @@ class _AchatsState extends State<Achats> {
       ], title: const AppTitle()),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : data.isEmpty && status == 'Success' // Check if data is empty after successful fetch
+          : data.isEmpty &&
+                  status ==
+                      'Success' // Check if data is empty after successful fetch
               ? const Center(
                   child: Text(
                     "Aucun achat disponible.",
@@ -339,14 +340,15 @@ class _AchatsState extends State<Achats> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => Listdetail(
-                                      data[index]["id_approvisionnement"]
-                                          .toString()),
+                                  builder: (context) => Listdetail(data[index]
+                                          ["id_approvisionnement"]
+                                      .toString()),
                                 ),
                               );
                             },
                             title: Text(
-                              data[index]["fournisseur"] ?? "N/A", // Handle potential null
+                              data[index]["fournisseur"] ??
+                                  "N/A", // Handle potential null
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -373,14 +375,16 @@ class _AchatsState extends State<Achats> {
                                                     ["id_approvisionnement"])
                                                 .then((_) {
                                               // After deletion, refresh the list
-                                              Navigator.pop(context); // Close the dialog
+                                              Navigator.pop(
+                                                  context); // Close the dialog
                                             });
                                           },
                                           child: const Text("Confirmer"),
                                         ),
                                         TextButton(
                                           onPressed: () {
-                                            Navigator.pop(context); // Close the dialog
+                                            Navigator.pop(
+                                                context); // Close the dialog
                                           },
                                           child: const Text("Annuler"),
                                         ),
@@ -401,8 +405,9 @@ class _AchatsState extends State<Achats> {
                               style:
                                   const TextStyle(fontWeight: FontWeight.w400),
                             ),
-                            subtitle:
-                                Text(data[index]["date_approvisionnement"] ?? "N/A"), // Handle potential null
+                            subtitle: Text(data[index]
+                                    ["date_approvisionnement"] ??
+                                "N/A"), // Handle potential null
                           ),
                         ),
                       ),
@@ -476,8 +481,7 @@ class _AchatsState extends State<Achats> {
                               decoration: const InputDecoration(
                                 labelText: "Date de l'achat",
                                 filled: true,
-                                prefixIcon:
-                                    Icon(Icons.calendar_today_outlined),
+                                prefixIcon: Icon(Icons.calendar_today_outlined),
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide.none,
                                 ),

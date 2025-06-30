@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:stocktrue/ip.dart';
-
 import 'package:http/http.dart' as http;
 class report extends StatefulWidget {
   const report({super.key});
