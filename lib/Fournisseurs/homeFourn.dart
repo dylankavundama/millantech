@@ -19,36 +19,35 @@ class _HomefournState extends State<Homefourn> {
   List data = [];
   String status = '';
   Future<void> update() async {
-  setState(() {
-    isLoading = true;
-  });
-  try {
-    var url = "$Adress_IP/FOURNISSEUR/updatefournisseur.php";
-    var res = await http.post(Uri.parse(url), body: {
-      "noms": nom.text,
-      "adresse": adresse.text,
-      "mail": mail.text,
-      "telephone": phone.text,
-      "id_fournisseur": code.text
-    });
-    var repoe = jsonDecode(res.body);
-    if (repoe["message"] == "Mise à jour réussie.") {
-      bar("Mise à jour réussie.");
-    } else if (repoe["error"] == "Paramètres manquants.") {
-      bar("Paramètres manquants.");
-    } else {
-      bar("Erreur lors de la mise à jour.");
-    }
-    await getrecord();
-  } catch (e) {
-    print(e);
-  } finally {
     setState(() {
-      isLoading = false;
+      isLoading = true;
     });
+    try {
+      var url = "$Adress_IP/FOURNISSEUR/updatefournisseur.php";
+      var res = await http.post(Uri.parse(url), body: {
+        "noms": nom.text,
+        "adresse": adresse.text,
+        "mail": mail.text,
+        "telephone": phone.text,
+        "id_fournisseur": code.text
+      });
+      var repoe = jsonDecode(res.body);
+      if (repoe["message"] == "Mise à jour réussie.") {
+        bar("Mise à jour réussie.");
+      } else if (repoe["error"] == "Paramètres manquants.") {
+        bar("Paramètres manquants.");
+      } else {
+        bar("Erreur lors de la mise à jour.");
+      }
+      await getrecord();
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
-}
-
 
   Future<void> delrecord(String id) async {
     try {
@@ -73,25 +72,24 @@ class _HomefournState extends State<Homefourn> {
     }
   }
 
-Future<void> getrecord() async {
-  setState(() {
-    isLoading = true;
-  });
-  try {
-    var url = "$Adress_IP/FOURNISSEUR/getfournisseur.php";
-    var response = await http.get(Uri.parse(url));
+  Future<void> getrecord() async {
     setState(() {
-      data = jsonDecode(response.body);
+      isLoading = true;
     });
-  } catch (e) {
-    print(e);
-  } finally {
-    setState(() {
-      isLoading = false;
-    });
+    try {
+      var url = "$Adress_IP/FOURNISSEUR/getfournisseur.php";
+      var response = await http.get(Uri.parse(url));
+      setState(() {
+        data = jsonDecode(response.body);
+      });
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
-}
-
 
   void bar(String description) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -124,8 +122,11 @@ Future<void> getrecord() async {
       body: RefreshIndicator(
         onRefresh: _refreshData,
         child: isLoading
-    ? const Center(child: CircularProgressIndicator(color: Colors.red,))
-    : ListView.builder(
+            ? const Center(
+                child: CircularProgressIndicator(
+       
+              ))
+            : ListView.builder(
                 itemCount: data.length,
                 itemBuilder: (context, index) {
                   return Card(

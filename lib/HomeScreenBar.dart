@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:stocktrue/Achats/Achats.dart';
-import 'package:stocktrue/Colors.dart';
 import 'package:stocktrue/Login/authentification.dart';
 import 'package:stocktrue/Paternars.dart';
 import 'package:stocktrue/Produits/product.dart';
+import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/vente.dart';
 
 class HomeMillan extends StatefulWidget {

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:stocktrue/Clients/home.dart';
-import 'package:stocktrue/Colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/Fournisseurs/homeFourn.dart';
 import 'package:stocktrue/Util.dart';
