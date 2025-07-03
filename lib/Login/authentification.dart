@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
-import 'package:stocktrue/HomeScreenBar.dart';
-import 'package:stocktrue/Smartphone/homeSmart.dart';
+import 'package:stocktrue/Smartphone/homeSmart.dart'; // This might still be needed if HomeBarAdmin has a path to it, but not directly from AuthPage anymore.
+import 'package:stocktrue/agent/homeBarAgent.dart';
+
+import '../HomeScreenBar.dart'; // Ensure HomeBarAdmin is defined here
 
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -19,6 +21,8 @@ class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
+  // This _isTechnicianLogin corresponds to the "Agent" role in your UI switch.
+  // When true, the user is attempting to log in as an Agent.
   bool _isTechnicianLogin = false;
   String _message = '';
 
@@ -28,7 +32,7 @@ class _AuthPageState extends State<AuthPage> {
   @override
   void initState() {
     super.initState();
-    _initHive();
+    _initHiveAndCheckLogin(); // Call a new method to handle both Hive init and login check
   }
 
   @override
@@ -38,49 +42,77 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
-  Future<void> _initHive() async {
+  Future<void> _initHiveAndCheckLogin() async {
     await Hive.initFlutter();
     _usersBox = await Hive.openBox('users');
     _techniciansBox = await Hive.openBox('technicians');
 
     // Initialisation avec des données de test uniquement en développement
     await _initializeTestData();
+
+    // After Hive is initialized and test data is set, check login status
+    _checkLoginStatus();
   }
 
   Future<void> _initializeTestData() async {
+    // Only add test data if the boxes are empty
+    // Technicians (Agents) - these directly map to the 'Agent' role.
     if (_techniciansBox.isEmpty) {
       await _techniciansBox.putAll({
-        'tech@example.com': {
-          'email': 'tech@example.com',
-          'name': 'Technicien Test',
-          'isTechnician': true,
-        },
-        'admin@example.com': {
-          'email': 'admin@example.com',
-          'name': 'Admin Technicien',
-          'isTechnician': true,
+        'agent@example.com': {
+          // Renamed for clarity: agent instead of tech
+          'email': 'agent@example.com',
+          'name': 'Agent Test',
+          'isTechnician': true, // Indicates Agent role
         },
         'mac@gmail.com': {
+          // This user is also treated as an Agent for navigation
           'email': 'mac@gmail.com',
-          'name': 'Admin Technicien',
+          'name': 'Agent Macmillan',
           'isTechnician': true,
         }
       });
     }
 
+    // Users (Admins) - these directly map to the 'Admin' role.
     if (_usersBox.isEmpty) {
-      // Ajout d'un utilisateur test avec mot de passe hashé
       await _usersBox.put('admin@gmail.com', {
         'email': 'admin@gmail.com',
-        'name': 'Admin',
+        'name': 'Admin User',
         'password': _hashPassword('1234'),
-        'isTechnician': false,
+        'isTechnician': false, // Indicates Admin role
       });
     }
   }
 
   String _hashPassword(String password) {
     return sha256.convert(utf8.encode(password)).toString();
+  }
+
+  // New method to check login status on app restart
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    final isTechnician = prefs.getBool('isTechnician') ?? false;
+
+    if (isLoggedIn) {
+      // Use addPostFrameCallback to ensure navigation happens after the build cycle
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) { // Check if the widget is still mounted before navigating
+          if (isTechnician) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeBarAgent()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeBarAdmin()),
+            );
+          }
+        }
+      });
+    }
   }
 
   Future<void> _login() async {
@@ -95,9 +127,11 @@ class _AuthPageState extends State<AuthPage> {
       final email = _emailController.text.trim().toLowerCase();
 
       if (_isTechnicianLogin) {
-        await _handleTechnicianLogin(email);
+        // If the switch is on 'Agent' (_isTechnicianLogin is true), handle Agent login
+        await _handleAgentLogin(email);
       } else {
-        await _handleUserLogin(email);
+        // If the switch is on 'Admin' (_isTechnicianLogin is false), handle Admin login
+        await _handleAdminLogin(email);
       }
     } catch (e) {
       _handleLoginError(e);
@@ -108,27 +142,8 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
-  Future<void> _handleTechnicianLogin(String email) async {
-    if (!_techniciansBox.containsKey(email)) {
-      throw Exception('Email technicien non reconnu');
-    }
-
-    final technician = _techniciansBox.get(email);
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString('email', email);
-    await prefs.setString('userName', technician['name']);
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setBool('isTechnician', true);
-
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => ShopSelectionPage()),
-    );
-  }
-
-  Future<void> _handleUserLogin(String email) async {
+  // Handles login for 'Admin' role
+  Future<void> _handleAdminLogin(String email) async {
     final password = _passwordController.text.trim();
 
     if (!_usersBox.containsKey(email)) {
@@ -147,12 +162,38 @@ class _AuthPageState extends State<AuthPage> {
     await prefs.setString('email', email);
     await prefs.setString('userName', user['name']);
     await prefs.setBool('isLoggedIn', true);
-    await prefs.setBool('isTechnician', false);
+    await prefs.setBool(
+        'isTechnician', false); // Storing role as non-technician (admin)
 
     if (!mounted) return;
+    // Direct navigation to HomeBarAdmin for Admin users
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const adminPage()),
+      MaterialPageRoute(builder: (context) => const HomeBarAdmin()),
+    );
+  }
+
+  // Handles login for 'Agent' role
+  Future<void> _handleAgentLogin(String email) async {
+    if (!_techniciansBox.containsKey(email)) {
+      throw Exception('Email agent non reconnu');
+    }
+
+    final technician = _techniciansBox.get(email);
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('email', email);
+    await prefs.setString('userName', technician['name']);
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setBool(
+        'isTechnician', true); // Storing role as technician (agent)
+
+    if (!mounted) return;
+    // Direct navigation to HomeBarAgent for Agent users
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeBarAgent()),
     );
   }
 
@@ -189,15 +230,13 @@ class _AuthPageState extends State<AuthPage> {
                   const SizedBox(height: 24),
                   _buildEmailField(),
                   if (!_isTechnicianLogin) ...[
+                    // Password field only for Admin (non-technician) login
                     const SizedBox(height: 16),
                     _buildPasswordField(),
                   ],
                   const SizedBox(height: 24),
                   _buildLoginButton(),
-                  if (!_isTechnicianLogin) ...[
-                    const SizedBox(height: 16),
-                    // _buildRegisterButton(),
-                  ],
+                  const SizedBox(height: 16), // Spacing before the switch
                   _buildRoleSwitch(),
                   const SizedBox(height: 16),
                   _buildErrorMessage(),
@@ -232,12 +271,15 @@ class _AuthPageState extends State<AuthPage> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             Switch(
+              // _isTechnicianLogin being true means 'Agent' is selected
+              // _isTechnicianLogin being false means 'Admin' is selected
               value: _isTechnicianLogin,
               onChanged: (value) {
                 setState(() {
                   _isTechnicianLogin = value;
-                  _message = '';
+                  _message = ''; // Clear message on role switch
                   if (value) {
+                    // If switching to Agent, clear password as it's not needed
                     _passwordController.clear();
                   }
                 });
@@ -341,81 +383,6 @@ class _AuthPageState extends State<AuthPage> {
         ),
         textAlign: TextAlign.center,
       ),
-    );
-  }
-}
-
-class ShopSelectionPage extends StatelessWidget {
-  const ShopSelectionPage({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sélection de boutique'),
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Choisissez votre boutique',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomeMillan(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-              ),
-              child: const Text('Millan Tech'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HomeSmart(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-              ),
-              child: const Text('Smart Phone'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class adminPage extends StatefulWidget {
-  const adminPage({super.key});
-
-  @override
-  State<adminPage> createState() => _adminPageState();
-}
-
-class _adminPageState extends State<adminPage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: const Center(child: Text("admin")),
     );
   }
 }

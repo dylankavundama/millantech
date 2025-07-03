@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart' as pp;
 // import 'package:pdf/pdf.dart';
 import 'package:stocktrue/Produits/mobile.dart';
@@ -13,10 +14,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:printing/printing.dart';
 
+import '../Achats/Listdetail.dart';
+
 // ignore: must_be_immutable
 class Lisventedet extends StatefulWidget {
   String code;
-  Lisventedet(this.code, {super.key});
+  String client;
+  Lisventedet(
+    
+    this.client,
+    this.code, {super.key});
 
   @override
   State<Lisventedet> createState() => _LisventedetState();
@@ -27,9 +34,8 @@ class _LisventedetState extends State<Lisventedet> {
   TextEditingController codeproduit = TextEditingController();
   TextEditingController quantite = TextEditingController();
   TextEditingController prixu = TextEditingController();
-  // List<Achatdetail> clients = [];
+  List<Achatdetail> clients = [];
   Map<String, dynamic> once = {};
-  String client = "";
 
   // String adress = currentip();
   List data = [];
@@ -72,17 +78,21 @@ class _LisventedetState extends State<Lisventedet> {
     }
   }
 
-  Future<void> _createPDF(String date, String nom, String code) async {
+  Future<void> _createPDF(
+      {String? date, required String nom, String? code}) async {
     print('Impression PDF déclenchée');
 
-    // Données
+    // 🔹 Générer la date et le numéro si non fournis
+    date ??= DateFormat('dd/MM/yyyy').format(DateTime.now());
+    code ??= 'F-${DateTime.now().millisecondsSinceEpoch}';
+
+    // 🔹 Données produits
     List<Map<String, dynamic>> data = await fetchdata();
 
-    // Création du document
+    // 🔹 Création du document PDF
     final PdfDocument document = PdfDocument();
     final PdfPage page = document.pages.add();
     final Size pageSize = page.getClientSize();
-
     final PdfGraphics graphics = page.graphics;
 
     final PdfFont titleFont =
@@ -91,30 +101,32 @@ class _LisventedetState extends State<Lisventedet> {
 
     double top = 0;
 
-    // 🔷 Logo (assurez-vous que 'assets/logo.png' existe dans pubspec.yaml)
+    // 🔹 Logo (assurez-vous que l'image est dans pubspec.yaml)
     final ByteData bytes = await rootBundle.load('assets/logo.png');
     final Uint8List imageData = bytes.buffer.asUint8List();
     final PdfBitmap logo = PdfBitmap(imageData);
 
     graphics.drawImage(logo, const Rect.fromLTWH(0, 0, 100, 100));
 
-    // 🔷 Infos entreprise
+    // 🔹 Coordonnées de l'entreprise
     graphics.drawString(
       'PRO CLEANERS\n60 Faubourg Saint Honoré\n75116 Paris\nFrance\nprocleaners@live.com',
       contentFont,
       bounds: const Rect.fromLTWH(110, 0, 250, 100),
     );
 
-    // 🔶 Infos client
+    // 🔹 Infos client
+// ...
     graphics.drawString(
-      'FACTURÉ À:\n$nom\n82 rue Sadi Carnot\n75116 Paris\nFrance',
+      'FACTURÉ À $nom\n82 rue Sadi Carnot\n75116 Paris\nFrance',
       contentFont,
       bounds: Rect.fromLTWH(pageSize.width - 200, 0, 200, 100),
     );
+// ...
 
     top += 120;
 
-    // 🔷 Détails facture
+    // 🔹 Détails de la facture
     graphics.drawString(
       'Facture N° : $code\nDate : $date\nÉchéance : 14 jours\nDate de livraison : $date',
       contentFont,
@@ -123,7 +135,7 @@ class _LisventedetState extends State<Lisventedet> {
 
     top += 90;
 
-    // 🔶 Titre principal
+    // 🔹 Titre principal
     graphics.drawString(
       'FACTURE',
       titleFont,
@@ -132,7 +144,7 @@ class _LisventedetState extends State<Lisventedet> {
 
     top += 50;
 
-    // 🔷 Tableau
+    // 🔹 Tableau des produits
     final PdfGrid grid = PdfGrid();
     grid.columns.add(count: 4);
     grid.headers.add(1);
@@ -155,12 +167,13 @@ class _LisventedetState extends State<Lisventedet> {
       total += double.tryParse(item['prix_total'].toString()) ?? 0;
     }
 
+    // 🔹 Style global du tableau
     grid.style = PdfGridStyle(
       font: PdfStandardFont(PdfFontFamily.helvetica, 12),
       cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
     );
 
-// Appliquer le style à chaque cellule d’en-tête manuellement
+    // 🔹 Style des cellules d’en-tête
     for (int i = 0; i < header.cells.count; i++) {
       final cell = header.cells[i];
       cell.style.backgroundBrush = PdfBrushes.lightGray;
@@ -169,19 +182,20 @@ class _LisventedetState extends State<Lisventedet> {
           style: PdfFontStyle.bold);
     }
 
+    // 🔹 Affichage du tableau
     grid.draw(
       page: page,
       bounds: Rect.fromLTWH(0, top, pageSize.width, 0),
     );
 
-    // 🔶 Total à payer
+    // 🔹 Montant total
     graphics.drawString(
       'MONTANT TOTAL (EUR): €${total.toStringAsFixed(2)}',
       PdfStandardFont(PdfFontFamily.helvetica, 16, style: PdfFontStyle.bold),
       bounds: Rect.fromLTWH(0, top + 150, 400, 30),
     );
 
-    // 🔄 Enregistrement
+    // 🔹 Sauvegarde et impression
     final Uint8List bytesFinal = Uint8List.fromList(await document.save());
     document.dispose();
 
@@ -266,8 +280,15 @@ class _LisventedetState extends State<Lisventedet> {
                 ),
                 IconButton(
                     onPressed: () {
-                      String v = DateTime.now.toString();
-                      _createPDF(v, "nome", "code");
+                      String now =
+                          DateFormat('dd/MM/yyyy').format(DateTime.now());
+
+                      _createPDF(
+                        date: now,
+                        nom: widget.client,
+                        code:
+                            null, // ou tu peux supprimer ce champ pour générer automatiquement
+                      );
                     },
                     icon: const Icon(Icons.print)),
                 IconButton(

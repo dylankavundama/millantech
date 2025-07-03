@@ -212,7 +212,9 @@ class _VentesState extends State<Ventes> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => Lisventedet(
-                                      data[index]["id_vente"].toString()),
+                                    data[index]["client"].toString(),
+                                    data[index]["id_vente"].toString(),
+                                  ),
                                 ),
                               );
                             },

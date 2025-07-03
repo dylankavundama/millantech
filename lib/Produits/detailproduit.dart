@@ -260,24 +260,7 @@ class _DetailproduitState extends State<Detailproduit> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.print),
-                                    onPressed: () {
-                                      DateTime t = DateTime.now();
-                                      bar("Création du PDF en cours...");
-                                      _createPDF(t.toString(),
-                                          widget.desigantion, widget.code);
-                                    },
-                                    color: Colors.white,
-                                    style: ElevatedButton.styleFrom(
-                                      elevation: 0,
-                                      backgroundColor: const Color.fromARGB(
-                                          255, 16, 131, 33),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
+                 
                                   IconButton(
                                     icon: const Icon(Icons.delete),
                                     onPressed: () {
@@ -286,7 +269,7 @@ class _DetailproduitState extends State<Detailproduit> {
                                         context,
                                         CupertinoPageRoute(
                                             builder: (context) =>
-                                                  HomeMillan()),
+                                                  HomeBarAdmin()),
                                         (Route<dynamic> route) => false,
                                       );
                                     },

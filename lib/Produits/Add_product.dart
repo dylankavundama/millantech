@@ -100,7 +100,7 @@ class _AddProductState extends State<AddProduct> {
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
-            CupertinoPageRoute(builder: (_) => const HomeMillan()),
+            CupertinoPageRoute(builder: (_) => const HomeBarAdmin()),
             (route) => false,
           );
         } else {

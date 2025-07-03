@@ -7,14 +7,14 @@ import 'package:stocktrue/Produits/product.dart';
 import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/vente.dart';
 
-class HomeBarAdmin extends StatefulWidget {
-  const HomeBarAdmin({super.key});
+class HomeBarAgent extends StatefulWidget {
+  const HomeBarAgent({super.key});
 
   @override
-  State<HomeBarAdmin> createState() => _HomeBarAdminState();
+  State<HomeBarAgent> createState() => _HomeBarAgentState();
 }
 
-class _HomeBarAdminState extends State<HomeBarAdmin> {
+class _HomeBarAgentState extends State<HomeBarAgent> {
   int myindex = 0;
   List widgetlist = [
     const Product(),
@@ -25,7 +25,8 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: _buildDrawer(),
+      appBar: AppBar(title: Text("Espace Agent"),),
+     // drawer: _buildDrawer(),
       body: widgetlist[myindex],
       bottomNavigationBar: BottomNavigationBar(
           backgroundColor: Colors.white,
@@ -72,7 +73,7 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
           ListTile(
             leading: const Icon(Icons.shopping_bag, color: Colors.orangeAccent),
             title: Text(
-              'Millan Tech',
+              '---Millan Tech - Agent',
               style: GoogleFonts.lato(fontSize: 16),
             ),
             onTap: () {

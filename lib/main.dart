@@ -1,31 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:stocktrue/HomeScreenBar.dart';
-import 'package:stocktrue/Login/authentification.dart';
-
- 
+import 'package:stocktrue/HomeScreenBar.dart'; // For HomeBarAdmin
+import 'package:stocktrue/Login/authentification.dart'; // For AuthPage
+import 'package:stocktrue/agent/homeBarAgent.dart'; // For HomeBarAgent
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Check if it's the first launch
   bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+
+  // Check if a user is logged in
   bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+  // Check the user's role if logged in
+  // Default to false (Admin) if not found, as Admin is the default for password login
+  bool isTechnician = prefs.getBool('isTechnician') ?? false;
 
   runApp(MyApp(
     showAuthPage: isFirstLaunch,
     isLoggedIn: isLoggedIn,
+    isTechnician: isTechnician, // Pass the technician status
   ));
 }
 
 class MyApp extends StatelessWidget {
   final bool showAuthPage;
   final bool isLoggedIn;
+  final bool isTechnician; // New parameter to store the user's role
 
-  const MyApp({Key? key, required this.showAuthPage, required this.isLoggedIn})
-      : super(key: key);
+  const MyApp({
+    Key? key,
+    required this.showAuthPage,
+    required this.isLoggedIn,
+    required this.isTechnician, // Initialize the new parameter
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    Widget initialRoute;
+
+    if (showAuthPage) {
+      // If it's the first launch, always show the FirstLaunchWrapper (which leads to AuthPage)
+      initialRoute = const FirstLaunchWrapper();
+    } else {
+      // If not the first launch, check login status and role
+      if (isLoggedIn) {
+        if (isTechnician) {
+          initialRoute = const HomeBarAgent(); // Navigate to Agent home
+        } else {
+          initialRoute = const HomeBarAdmin(); // Navigate to Admin home
+        }
+      } else {
+        initialRoute = const AuthPage(); // Not logged in, show AuthPage
+      }
+    }
+
     return MaterialApp(
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
@@ -33,9 +64,7 @@ class MyApp extends StatelessWidget {
       ),
       title: 'Gebutik',
       debugShowCheckedModeBanner: false,
-      home: showAuthPage
-          ? const FirstLaunchWrapper()
-          : (isLoggedIn ? const HomeMillan() : const AuthPage()),
+      home: initialRoute, // Use the determined initial route
     );
   }
 }
