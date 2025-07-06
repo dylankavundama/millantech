@@ -54,6 +54,81 @@ class _MouvementStockState extends State<MouvementStock> {
     }
   }
 
+  Future<void> _updateQuantity(String productId, String newQuantity) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$Adress_IP/PRODUIT/updatequantity.php'),
+        body: {
+          'id_produit': productId,
+          'quantite': newQuantity,
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        if (result['success'] == true) {
+          _showSnackBar('Quantité mise à jour avec succès');
+          _fetchStocks(); // Recharger les données
+        } else {
+          _showSnackBar('Erreur: ${result['message'] ?? 'Erreur inconnue'}');
+        }
+      } else {
+        _showSnackBar('Erreur serveur: ${response.statusCode}');
+      }
+    } catch (e) {
+      _showSnackBar('Erreur de connexion: $e');
+    }
+  }
+
+  Future<void> _showEditQuantityDialog(Map<String, dynamic> produit) async {
+    final TextEditingController quantityController = TextEditingController(
+      text: produit['quantite']?.toString() ?? '0',
+    );
+
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Modifier la quantité'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Produit: ${produit['designation'] ?? 'Produit inconnu'}'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Nouvelle quantité',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newQuantity = quantityController.text.trim();
+                if (newQuantity.isNotEmpty) {
+                  Navigator.of(context).pop();
+                  await _updateQuantity(
+                    produit['id_produit']?.toString() ?? '',
+                    newQuantity,
+                  );
+                }
+              },
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -181,7 +256,7 @@ class _MouvementStockState extends State<MouvementStock> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      produit['nom_produit'] ?? 'Produit inconnu',
+                                      produit['designation'] ?? 'Produit inconnu',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -229,6 +304,11 @@ class _MouvementStockState extends State<MouvementStock> {
                                     ],
                                   ),
                                 ],
+                              ),
+                              trailing: IconButton(
+                                onPressed: () => _showEditQuantityDialog(produit),
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                tooltip: 'Modifier la quantité',
                               ),
                             ),
                           );
