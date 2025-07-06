@@ -65,6 +65,18 @@ class _AllproductState extends State<Allproduct> {
     }
   }
 
+  Color _getStockColor(int quantite) {
+    return quantite < 4 ? Colors.red : Colors.green;
+  }
+
+  IconData _getStockIcon(int quantite) {
+    return quantite < 4 ? Icons.warning : Icons.check_circle;
+  }
+
+  String _getStockStatus(int quantite) {
+    return quantite < 4 ? 'Stock Faible' : 'Stock OK';
+  }
+
   @override
   Widget build(BuildContext context) {
     final double height = MediaQuery.of(context).size.height;
@@ -83,6 +95,11 @@ class _AllproductState extends State<Allproduct> {
                         itemBuilder: (context, index) {
                           final produit = dataens[index];
                           final imageUrl = (produit["image"] ?? "").toString();
+                          final quantite = int.tryParse(produit["quantite"]?.toString() ?? '0') ?? 0;
+                          final stockColor = _getStockColor(quantite);
+                          final stockIcon = _getStockIcon(quantite);
+                          final stockStatus = _getStockStatus(quantite);
+
                           return GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -176,9 +193,39 @@ class _AllproductState extends State<Allproduct> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const Divider(color: Colors.orange),
-                                          Text(
-                                            "Quantité: \\${produit["quantite"]}",
-                                            style: const TextStyle(fontSize: 15, color: Colors.black),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                stockIcon,
+                                                color: stockColor,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "Quantité: $quantite",
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  color: stockColor,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 2, bottom: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: stockColor.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              stockStatus,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: stockColor,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                           Text(
                                             "Prix: \\${produit["prixu"]} \$",

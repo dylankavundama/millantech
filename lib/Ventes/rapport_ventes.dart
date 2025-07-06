@@ -44,7 +44,8 @@ class _RapportVentesState extends State<RapportVentes> {
     final filtered = _filteredVentes;
     _nombreVentes = filtered.length;
     _totalVentes = filtered.fold(0.0, (sum, vente) {
-      double montant = double.tryParse(vente['montant_total']?.toString() ?? '0') ?? 0;
+      final montant =
+          double.tryParse(vente['montant_total']?.toString() ?? '0') ?? 0;
       return sum + montant;
     });
     _moyenneVente = _nombreVentes > 0 ? _totalVentes / _nombreVentes : 0;
@@ -71,40 +72,9 @@ class _RapportVentesState extends State<RapportVentes> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        print('Structure des données de ventes: $data');
-        
-        List<Map<String, dynamic>> ventesAvecTotal = [];
-        
-        for (var vente in data) {
-          try {
-            final detailResponse = await http.post(
-              Uri.parse('$Adress_IP/DETAILVENTE/Get.php'),
-              body: {"id": vente['id_vente'].toString()},
-            );
-            
-            if (detailResponse.statusCode == 200) {
-              final List<dynamic> details = jsonDecode(detailResponse.body);
-              double totalVente = 0;
-              
-              for (var detail in details) {
-                totalVente += double.tryParse(detail['prix_total']?.toString() ?? '0') ?? 0;
-              }
-              
-              vente['montant_total'] = totalVente;
-              ventesAvecTotal.add(Map<String, dynamic>.from(vente));
-            } else {
-              vente['montant_total'] = 0;
-              ventesAvecTotal.add(Map<String, dynamic>.from(vente));
-            }
-          } catch (e) {
-            print('Erreur lors du calcul du total pour la vente ${vente['id_vente']}: $e');
-            vente['montant_total'] = 0;
-            ventesAvecTotal.add(Map<String, dynamic>.from(vente));
-          }
-        }
-        
         setState(() {
-          _ventes = ventesAvecTotal;
+          _ventes =
+              data.map((item) => Map<String, dynamic>.from(item)).toList();
           _isLoading = false;
         });
         _calculateStats();
@@ -378,17 +348,10 @@ class _RapportVentesState extends State<RapportVentes> {
                               itemCount: _filteredVentes.length,
                               itemBuilder: (context, index) {
                                 final vente = _filteredVentes[index];
-                                
-                                double montant = double.tryParse(vente['montant_total']?.toString() ?? '0') ?? 0;
-
-                                String dateVente = '';
-                                if (vente['date_vente'] != null) {
-                                  dateVente = vente['date_vente'].toString();
-                                } else if (vente['date'] != null) {
-                                  dateVente = vente['date'].toString();
-                                } else if (vente['created_at'] != null) {
-                                  dateVente = vente['created_at'].toString();
-                                }
+                                final montant = double.tryParse(
+                                        vente['montant_total']?.toString() ??
+                                            '0') ??
+                                    0;
 
                                 return Card(
                                   elevation: 3,
@@ -407,7 +370,7 @@ class _RapportVentesState extends State<RapportVentes> {
                                       ),
                                     ),
                                     title: Text(
-                                      'Vente #${vente['id_vente'] ?? vente['id'] ?? 'N/A'}',
+                                      'Vente #${vente['id_vente'] ?? 'N/A'}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -419,7 +382,7 @@ class _RapportVentesState extends State<RapportVentes> {
                                       children: [
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Client: ${vente['client'] ?? vente['nom_client'] ?? 'N/A'}',
+                                          'Client: ${vente['client'] ?? 'N/A'}',
                                           style: const TextStyle(
                                               color: Colors.grey),
                                         ),
@@ -430,7 +393,7 @@ class _RapportVentesState extends State<RapportVentes> {
                                                 size: 14, color: Colors.grey),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'Date: ${_formatDate(dateVente)}',
+                                              'Date: ${_formatDate(vente['date_vente'] ?? '')}',
                                               style: const TextStyle(
                                                   color: Colors.grey),
                                             ),
