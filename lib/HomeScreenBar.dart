@@ -6,6 +6,8 @@ import 'package:stocktrue/Paternars.dart';
 import 'package:stocktrue/Produits/product.dart';
 import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/vente.dart';
+import 'package:stocktrue/Ventes/mouvement.dart';
+import 'package:stocktrue/Ventes/rapport_ventes.dart';
 
 class HomeBarAdmin extends StatefulWidget {
   const HomeBarAdmin({super.key});
@@ -18,8 +20,9 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
   int myindex = 0;
   List widgetlist = [
     const Product(),
-    // const Achats(),
     const Ventes(),
+    const MouvementStock(),
+    const RapportVentes(),
     const Paternars()
   ];
   @override
@@ -33,6 +36,7 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
           showUnselectedLabels: true,
           selectedItemColor: princip(),
           elevation: 0,
+          type: BottomNavigationBarType.fixed,
           onTap: (index) {
             setState(() {
               myindex = index;
@@ -45,6 +49,10 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
             // BottomNavigationBarItem(
             //     icon: Icon(Icons.business_center_outlined), label: "Achats"),
             BottomNavigationBarItem(icon: Icon(Icons.sell), label: "Ventes"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.inventory_2), label: "Mouvements"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.analytics), label: "Rapports"),
             BottomNavigationBarItem(
                 icon: Icon(Icons.person_2_outlined), label: "Partenaires")
           ]),
