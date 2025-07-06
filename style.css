@@ -1,0 +1,456 @@
+/* Variables CSS (conserver les existantes) */
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #333;
+    --text-color: #555;
+    --background-light: #f9f9f9;
+    --white: #fff;
+    --light-gray: #eee;
+    --border-radius: 8px;
+    --padding-section: 80px 0;
+    --blue-download: #1976D2;
+    --blue-download-hover: #1565C0;
+}
+
+/* Réinitialisation de base (conserver l'existant) */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--white);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header - Section Hero (conserver l'existant, sauf la partie image) */
+.hero {
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-align: center;
+    padding: var(--padding-section);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(46, 125, 50, 0.9));
+    z-index: 0;
+}
+
+.hero .container {
+    position: relative;
+    z-index: 1;
+}
+
+.hero h1 {
+    font-size: 3.2em;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.hero .subtitle {
+    font-size: 1.3em;
+    margin-bottom: 40px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: var(--secondary-color);
+    color: var(--white);
+    padding: 15px 30px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.cta-button:hover {
+    background-color: #555;
+    transform: translateY(-3px);
+}
+
+/* Styles pour les multiples captures d'écran */
+.hero-image-placeholder {
+    margin-top: 60px;
+    /* Retiré le background-color transparent si vous voulez un fond unifié */
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Aligne les images au centre verticalement */
+    gap: 15px;
+    padding: 20px;
+    background-color: rgba(0,0,0,0.1); /* Fond léger pour le conteneur des images */
+    min-height: 250px; /* Ajoute une hauteur minimale pour le conteneur, évite l'effondrement si les images tardent à charger */
+}
+
+.hero-image-placeholder .app-screenshot {
+    width: 32%; /* Chaque image prendra un peu moins d'un tiers pour laisser de l'espace pour les gaps */
+    /* Utilisez une hauteur fixe ou un max-height si vous voulez que les images soient de même hauteur */
+    height: 250px; /* Exemple de hauteur fixe pour les captures (ajustez selon vos images) */
+    object-fit: contain; /* Garde le ratio de l'image, affichant l'image entière. Utiliser 'cover' si vous préférez qu'elle remplisse l'espace en coupant les bords */
+    display: block;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-image-placeholder .app-screenshot:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Ombre plus prononcée au survol */
+}
+
+/* Sections communes (conserver l'existant) */
+section {
+    padding: var(--padding-section);
+    text-align: center;
+}
+
+section h2 {
+    font-size: 2.5em;
+    margin-bottom: 60px;
+    color: var(--secondary-color);
+    font-weight: 700;
+}
+
+/* Section Fonctionnalités (conserver l'existant) */
+.features-section {
+    background-color: var(--background-light);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.feature-item {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.feature-item .icon {
+    font-size: 3em;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.feature-item h3 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.feature-item p {
+    font-size: 1em;
+    color: var(--text-color);
+}
+
+/* Section Témoignages (conserver l'existant) */
+.testimonials-section {
+    background-color: var(--white);
+}
+
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.testimonial-item {
+    background-color: var(--background-light);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    text-align: left;
+}
+
+.testimonial-item p {
+    font-style: italic;
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+}
+
+.testimonial-author {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Section de téléchargement (conserver l'existant) */
+.download-section {
+    background-color: var(--background-light);
+    padding: var(--padding-section);
+    text-align: center;
+}
+
+.download-section h2 {
+    color: var(--secondary-color);
+    margin-bottom: 30px;
+}
+
+.download-section p {
+    font-size: 1.1em;
+    margin-bottom: 40px;
+}
+
+.download-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.download-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--blue-download);
+    color: var(--white);
+    padding: 25px 35px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-size: 1.2em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    min-width: 250px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.download-button:hover {
+    background-color: var(--blue-download-hover);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.download-button .app-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    object-fit: contain;
+}
+
+.download-button span {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.download-button small {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.download-note {
+    font-size: 0.9em;
+    color: var(--text-color);
+    margin-top: 50px;
+    padding: 15px;
+    background-color: #f0f0f0;
+    border-left: 5px solid var(--primary-color);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: var(--border-radius);
+}
+
+/* Section Inscription (conserver l'existant) */
+.signup-section {
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: var(--padding-section);
+}
+
+.signup-section h2 {
+    color: var(--white);
+}
+
+.signup-section p {
+    font-size: 1.1em;
+    margin-bottom: 30px;
+}
+
+#signupForm {
+    max-width: 500px;
+    margin: 0 auto;
+    background-color: var(--white);
+    padding: 40px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+#signupForm input[type="text"],
+#signupForm input[type="email"] {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid var(--light-gray);
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    color: var(--secondary-color);
+}
+
+#signupForm input[type="text"]:focus,
+#signupForm input[type="email"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+}
+
+#signupForm .cta-button {
+    background-color: var(--primary-color);
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+}
+
+#signupForm .cta-button:hover {
+    background-color: #3e8e41;
+}
+
+.form-message {
+    margin-top: 20px;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/* Footer (conserver l'existant) */
+footer {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    padding: 40px 0;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.footer-nav {
+    margin-top: 15px;
+}
+
+.footer-nav a {
+    color: var(--white);
+    text-decoration: none;
+    margin: 0 15px;
+    transition: color 0.3s ease;
+}
+
+.footer-nav a:hover {
+    color: var(--primary-color);
+}
+
+/* Media Queries pour la responsivité (ajustements pour les captures d'écran) */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.5em;
+    }
+
+    .hero .subtitle {
+        font-size: 1em;
+    }
+
+    .hero-image-placeholder {
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
+        gap: 20px;
+        min-height: auto; /* Supprime la hauteur minimale sur mobile pour s'adapter au contenu */
+    }
+
+    .hero-image-placeholder .app-screenshot {
+        width: 90%; /* Prend plus de largeur sur mobile */
+        height: auto; /* Permet à la hauteur de s'adapter au contenu sur mobile */
+    }
+
+    .features-grid,
+    .testimonial-grid {
+        grid-template-columns: 1fr;
+    }
+
+    section h2 {
+        font-size: 2em;
+    }
+
+    .cta-button {
+        padding: 12px 25px;
+        font-size: 1em;
+    }
+
+    .feature-item {
+        padding: 20px;
+    }
+
+    .feature-item .icon {
+        font-size: 2.5em;
+    }
+
+    .signup-section p {
+        font-size: 1em;
+    }
+
+    #signupForm {
+        padding: 30px;
+    }
+
+    .download-buttons-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .download-button {
+        width: 80%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 2em;
+    }
+
+    .hero .subtitle {
+        font-size: 0.9em;
+    }
+
+    section h2 {
+        font-size: 1.8em;
+    }
+}

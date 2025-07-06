@@ -25,8 +25,10 @@ class _HomeBarAgentState extends State<HomeBarAgent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Espace Agent"),),
-     // drawer: _buildDrawer(),
+      appBar: AppBar(
+        title: Text("Espace Agent"),
+      ),
+      // drawer: _buildDrawer(),
       body: widgetlist[myindex],
       bottomNavigationBar: BottomNavigationBar(
           backgroundColor: Colors.white,

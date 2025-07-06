@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:stocktrue/Produits/detailproduit.dart';
 import 'package:stocktrue/ip.dart';
 import 'Add_product.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Allproduct extends StatefulWidget {
   const Allproduct({Key? key}) : super(key: key);
@@ -16,12 +17,22 @@ class Allproduct extends StatefulWidget {
 class _AllproductState extends State<Allproduct> {
   List dataens = [];
   bool isLoading = true;
+  bool isTechnician = false;
+  String? _errorMessage;
   // String adress = currentip();
 
   @override
   void initState() {
     super.initState();
     fetchProducts();
+    _getRole();
+  }
+
+  Future<void> _getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isTechnician = prefs.getBool('isTechnician') ?? false;
+    });
   }
 
   Future<void> fetchProducts() async {
@@ -32,14 +43,25 @@ class _AllproductState extends State<Allproduct> {
         setState(() {
           dataens = jsonDecode(response.body);
           isLoading = false;
+          _errorMessage = null;
         });
       } else {
-        print("Erreur serveur : ${response.statusCode}");
-        setState(() => isLoading = false);
+        setState(() {
+          isLoading = false;
+          _errorMessage = "Erreur serveur : \\${response.statusCode}";
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_errorMessage!)),
+        );
       }
     } catch (e) {
-      print("Erreur de connexion : $e");
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        _errorMessage = "Erreur de connexion : $e";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_errorMessage!)),
+      );
     }
   }
 
@@ -52,133 +74,150 @@ class _AllproductState extends State<Allproduct> {
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : dataens.isEmpty
-                ? const Center(child: Text("Aucun produit trouvé."))
-                : ListView.builder(
-                    itemCount: dataens.length,
-                    itemBuilder: (context, index) {
-                      final produit = dataens[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => Detailproduit(
-                                produit["id_produit"].toString(),
-                                produit["designation"].toString(),
+            : _errorMessage != null
+                ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
+                : dataens.isEmpty
+                    ? const Center(child: Text("Aucun produit trouvé."))
+                    : ListView.builder(
+                        itemCount: dataens.length,
+                        itemBuilder: (context, index) {
+                          final produit = dataens[index];
+                          final imageUrl = (produit["image"] ?? "").toString();
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Detailproduit(
+                                    produit["id_produit"].toString(),
+                                    produit["designation"].toString(),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              height: 200,
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    top: 35,
+                                    child: Material(
+                                      elevation: 4.0,
+                                      borderRadius: BorderRadius.circular(16.0),
+                                      child: Container(
+                                        height: 165.0,
+                                        width: width * 0.91,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(16.0),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.grey.withOpacity(0.15),
+                                              offset: const Offset(0.0, 2.0),
+                                              blurRadius: 12.0,
+                                              spreadRadius: 2.0,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    left: 10,
+                                    child: Card(
+                                      elevation: 10.0,
+                                      shadowColor: Colors.grey.withOpacity(0.5),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15.0),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10.0),
+                                        child: imageUrl.isEmpty
+                                            ? Container(
+                                                height: 170,
+                                                width: 140,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
+                                              )
+                                            : Image.network(
+                                                imageUrl,
+                                                height: 170,
+                                                width: 140,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  height: 170,
+                                                  width: 140,
+                                                  color: Colors.grey.shade200,
+                                                  child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 45,
+                                    left: height * 0.22,
+                                    child: SizedBox(
+                                      height: 200,
+                                      width: 150,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            produit["designation"],
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const Divider(color: Colors.orange),
+                                          Text(
+                                            "Quantité: \\${produit["quantite"]}",
+                                            style: const TextStyle(fontSize: 15, color: Colors.black),
+                                          ),
+                                          Text(
+                                            "Prix: \\${produit["prixu"]} \$",
+                                            style: const TextStyle(fontSize: 17, color: Colors.grey),
+                                          ),
+                                          Text(
+                                            "Type: \\${produit["categorie"]}",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Color.fromARGB(255, 102, 101, 101),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const Divider(color: Colors.orange),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          height: 200,
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                top: 35,
-                                child: Material(
-                                  elevation: 0.0,
-                                  child: Container(
-                                    height: 165.0,
-                                    width: width * 0.91,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10.0),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.3),
-                                          offset: const Offset(0.0, 0.0),
-                                          blurRadius: 20.0,
-                                          spreadRadius: 4.0,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 0,
-                                left: 10,
-                                child: Card(
-                                  elevation: 10.0,
-                                  shadowColor: Colors.grey.withOpacity(0.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15.0),
-                                  ),
-                                  child: Container(
-                                    height: 170,
-                                    width: 140,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10.0),
-                                      image: DecorationImage(
-                                        fit: BoxFit.fill,
-                                        image: NetworkImage(
-                                          // "$Adress_IP/PRODUIT/images/${produit["image"]}",
-                                             "${produit["image"]}",
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 45,
-                                left: height * 0.22,
-                                child: SizedBox(
-                                  height: 200,
-                                  width: 150,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        produit["designation"],
-                                        style: const TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      const Divider(color: Colors.orange),
-                                      Text(
-                                        "Quantité: ${produit["quantite"]}",
-                                        style: const TextStyle(
-                                            fontSize: 15, color: Colors.black),
-                                      ),
-                                      Text(
-                                        "Prix: ${produit["prixu"]} \$",
-                                        style: const TextStyle(
-                                            fontSize: 17, color: Colors.grey),
-                                      ),
-                                      Text(
-                                        "Type: ${produit["categorie"]}",
-                                        style: const TextStyle(
-                                          fontSize: 17,
-                                          color: Color.fromARGB(
-                                              255, 102, 101, 101),
-                                        ),
-                                      ),
-                                      const Divider(color: Colors.orange),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                      ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) =>   AddProduct()));
-        },
-        disabledElevation: 10,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: isTechnician
+          ? null
+          : Tooltip(
+              message: "Ajouter un produit",
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) =>   AddProduct()));
+                },
+                disabledElevation: 10,
+                child: const Icon(Icons.add),
+              ),
+            ),
     );
   }
 }

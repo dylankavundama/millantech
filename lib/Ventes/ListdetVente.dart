@@ -20,10 +20,7 @@ import '../Achats/Listdetail.dart';
 class Lisventedet extends StatefulWidget {
   String code;
   String client;
-  Lisventedet(
-    
-    this.client,
-    this.code, {super.key});
+  Lisventedet(this.client, this.code, {super.key});
 
   @override
   State<Lisventedet> createState() => _LisventedetState();
@@ -110,7 +107,7 @@ class _LisventedetState extends State<Lisventedet> {
 
     // 🔹 Coordonnées de l'entreprise
     graphics.drawString(
-      'PRO CLEANERS\n60 Faubourg Saint Honoré\n75116 Paris\nFrance\nprocleaners@live.com',
+      'MillanTech\nBoulevard de libération\nBâtiment de la poste \n+243 819 782 016\nBunia',
       contentFont,
       bounds: const Rect.fromLTWH(110, 0, 250, 100),
     );
@@ -118,7 +115,7 @@ class _LisventedetState extends State<Lisventedet> {
     // 🔹 Infos client
 // ...
     graphics.drawString(
-      'FACTURÉ À $nom\n82 rue Sadi Carnot\n75116 Paris\nFrance',
+      'FACTURÉ À $nom\nBunia\nBoulevard de libération',
       contentFont,
       bounds: Rect.fromLTWH(pageSize.width - 200, 0, 200, 100),
     );
@@ -152,8 +149,8 @@ class _LisventedetState extends State<Lisventedet> {
     final PdfGridRow header = grid.headers[0];
     header.cells[0].value = 'Produits';
     header.cells[1].value = 'Quantité';
-    header.cells[2].value = 'Prix U (€)';
-    header.cells[3].value = 'PT (€)';
+    header.cells[2].value = 'Prix U (\$)';
+    header.cells[3].value = 'PT (\$)';
 
     double total = 0;
 
@@ -190,7 +187,7 @@ class _LisventedetState extends State<Lisventedet> {
 
     // 🔹 Montant total
     graphics.drawString(
-      'MONTANT TOTAL (EUR): €${total.toStringAsFixed(2)}',
+      'MONTANT TOTAL (USD): ${total.toStringAsFixed(2)} \$',
       PdfStandardFont(PdfFontFamily.helvetica, 16, style: PdfFontStyle.bold),
       bounds: Rect.fromLTWH(0, top + 150, 400, 30),
     );

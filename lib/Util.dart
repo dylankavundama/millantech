@@ -120,31 +120,28 @@ class AppTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      "Millan Tech",
-      textAlign: TextAlign.center,
-      style: TextStyle(fontWeight: FontWeight.bold),
+    return Center(
+      child: Image.asset(height: 160, 'assets/logo.png'),
     );
   }
 }
 
-
- 
-
-Color orangeAccent(){
+Color orangeAccent() {
   return Colors.orangeAccent;
 }
-Color blacks(){
+
+Color blacks() {
   return Colors.black;
 }
 
-Color white(){
+Color white() {
   return Colors.white;
 }
-Color? orange(){
+
+Color? orange() {
   return Colors.orange[800];
 }
-Color princip(){
+
+Color princip() {
   return const Color.fromRGBO(254, 188, 8, 1);
 }
-

@@ -184,6 +184,27 @@ class _AddProductState extends State<AddProduct> {
     );
   }
 
+  Widget _buildImagePreview() {
+    final url = _imageController.text.trim();
+    if (url.isEmpty) {
+      return Container(
+        height: imageContainerHeight,
+        color: Colors.grey.shade200,
+        child: const Center(child: Icon(Icons.image, size: 60, color: Colors.grey)),
+      );
+    }
+    return Image.network(
+      url,
+      height: imageContainerHeight,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => Container(
+        height: imageContainerHeight,
+        color: Colors.grey.shade200,
+        child: const Center(child: Icon(Icons.broken_image, size: 60, color: Colors.grey)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -200,161 +221,114 @@ class _AddProductState extends State<AddProduct> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildFormField(
-                      controller: _nameController,
-                      labelText: "Nom du produit*",
-                      hintText: "Entrez le nom du produit",
-                      icon: Icons.description,
-                      maxLength: 100,
-                      validator: (value) =>
-                          (value == null || value.trim().isEmpty) ? 'Ce champ est obligatoire.' : null,
-                    ),
-                    const SizedBox(height: fieldSpacing),
-                    _buildFormField(
-                      controller: _detailController,
-                      labelText: "Détail du produit*",
-                      hintText: "Entrez le détail du produit",
-                      icon: Icons.info_outline,
-                      maxLength: 255,
-                      validator: (value) =>
-                          (value == null || value.trim().isEmpty) ? 'Ce champ est obligatoire.' : null,
-                    ),
-                    const SizedBox(height: fieldSpacing),
-                    DropdownButtonFormField<String>(
-                      value: _selectedCategoryId,
-                      isExpanded: true,
-                      items: _categories.map((category) {
-                        return DropdownMenuItem<String>(
-                          value: category['id_categorie'].toString(),
-                          child: Text(category['designation'] ?? 'Inconnu'),
-                        );
-                      }).toList(),
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.category),
-                        border: OutlineInputBorder(),
-                        labelText: "Catégorie*",
-                      ),
-                      onChanged: (value) => setState(() => _selectedCategoryId = value),
-                      validator: (value) =>
-                          value == null ? 'Veuillez sélectionner une catégorie.' : null,
-                    ),
-                    const SizedBox(height: fieldSpacing),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildFormField(
-                            controller: _quantityController,
-                            labelText: "Quantité",
-                            hintText: "0",
-                            icon: Icons.inventory_2,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return null;
-                              final num = double.tryParse(value.replaceAll(',', '.'));
-                              if (num == null) return 'Quantité invalide.';
-                              if (num < 0) return 'La quantité ne peut être négative.';
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: fieldSpacing),
-                        Expanded(
-                          child: _buildFormField(
-                            controller: _priceController,
-                            labelText: "Prix unitaire",
-                            hintText: "0",
-                            icon: Icons.attach_money,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return null;
-                              final num = double.tryParse(value.replaceAll(',', '.'));
-                              if (num == null) return 'Prix invalide.';
-                              if (num < 0) return 'Le prix ne peut être négatif.';
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildImagePreview(),
                     const SizedBox(height: fieldSpacing),
                     _buildFormField(
                       controller: _imageController,
-                      labelText: "Lien de l'image*",
-                      hintText: "Collez l'URL de l'image ici",
-                      icon: Icons.link,
-                      keyboardType: TextInputType.url,
-                      onChanged: (value) => setState(() => _imageInputError = null),
+                      labelText: 'Lien de l\'image',
+                      hintText: 'https://.../image.jpg',
+                      icon: Icons.image,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return 'Ce champ est obligatoire.';
-                        final uri = Uri.tryParse(value.trim());
-                        if (uri == null || !uri.hasAbsolutePath || !uri.isAbsolute) return 'URL invalide.';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Le lien de l\'image est obligatoire.';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) => setState(() {}),
+                    ),
+                    const SizedBox(height: fieldSpacing),
+                    _buildFormField(
+                      controller: _nameController,
+                      labelText: 'Nom du produit',
+                      hintText: 'Ex: Smartphone',
+                      icon: Icons.label,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Le nom est obligatoire.';
+                        }
                         return null;
                       },
                     ),
                     const SizedBox(height: fieldSpacing),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Aperçu de l'image", style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 8),
-                        Container(
-                          height: imageContainerHeight,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: _imageInputError != null ? Colors.red : Colors.grey.shade400,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: (_imageController.text.trim().isNotEmpty &&
-                                  Uri.tryParse(_imageController.text.trim())?.isAbsolute == true)
-                              ? Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        _imageController.text.trim(),
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            const Center(child: Text("Erreur de chargement d'image.")),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close, color: Colors.white),
-                                        onPressed: _clearimage,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.image_not_supported,
-                                        size: 50, color: Colors.grey.shade400),
-                                    const SizedBox(height: 10),
-                                    const Text('Collez un lien d\'image valide pour voir l\'aperçu'),
-                                  ],
-                                ),
-                        ),
-                        if (_imageInputError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(_imageInputError!, style: const TextStyle(color: Colors.red)),
-                          ),
-                      ],
+                    _buildFormField(
+                      controller: _detailController,
+                      labelText: 'Détail',
+                      hintText: 'Description du produit',
+                      icon: Icons.description,
+                    ),
+                    const SizedBox(height: fieldSpacing),
+                    _buildFormField(
+                      controller: _quantityController,
+                      labelText: 'Quantité',
+                      hintText: '0',
+                      icon: Icons.confirmation_number,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'La quantité est obligatoire.';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'Entrez un nombre valide.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: fieldSpacing),
+                    _buildFormField(
+                      controller: _priceController,
+                      labelText: 'Prix unitaire',
+                      hintText: '0',
+                      icon: Icons.attach_money,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Le prix est obligatoire.';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Entrez un prix valide.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: fieldSpacing),
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategoryId,
+                      items: _categories.map((cat) {
+                        return DropdownMenuItem<String>(
+                          value: cat['id_categorie'].toString(),
+                          child: Text(cat['nom_categorie'] ?? cat['designation'] ?? ''),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategoryId = value;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Catégorie',
+                        prefixIcon: Icon(Icons.category),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value == null ? 'Sélectionnez une catégorie.' : null,
                     ),
                     const SizedBox(height: fieldSpacing * 2),
                     SizedBox(
                       height: buttonHeight,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
+                        icon: _isSavingProduct
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.save),
+                        label: Text(_isSavingProduct ? 'Enregistrement...' : 'Enregistrer'),
                         onPressed: _isSavingProduct ? null : _saveProduct,
-                        child: _isSavingProduct
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Enregistrer',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
                       ),
                     ),
                   ],
