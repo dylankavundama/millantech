@@ -12,13 +12,34 @@ class MouvementStock extends StatefulWidget {
 
 class _MouvementStockState extends State<MouvementStock> {
   List<Map<String, dynamic>> _stocks = [];
+  List<Map<String, dynamic>> _filteredStocks = [];
   bool _isLoading = true;
   String? _errorMessage;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchStocks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterStocks(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredStocks = _stocks;
+      } else {
+        _filteredStocks = _stocks.where((produit) {
+          final nom = produit['designation']?.toString().toLowerCase() ?? '';
+          return nom.contains(query.toLowerCase());
+        }).toList();
+      }
+    });
   }
 
   Future<void> _fetchStocks() async {
@@ -36,6 +57,7 @@ class _MouvementStockState extends State<MouvementStock> {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
           _stocks = data.map((item) => Map<String, dynamic>.from(item)).toList();
+          _filteredStocks = _stocks; // Initialiser les produits filtrés
           _isLoading = false;
         });
       } else {
@@ -168,153 +190,195 @@ class _MouvementStockState extends State<MouvementStock> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _fetchStocks,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Réessayer'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : _stocks.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Aucun produit disponible',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchStocks,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _stocks.length,
-                        itemBuilder: (context, index) {
-                          final produit = _stocks[index];
-                          final quantite = int.tryParse(produit['quantite']?.toString() ?? '0') ?? 0;
-                          final stockColor = _getStockColor(quantite);
-                          final stockIcon = _getStockIcon(quantite);
-                          final stockStatus = _getStockStatus(quantite);
-
-                          return Card(
-                            elevation: 4,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              leading: CircleAvatar(
-                                backgroundColor: stockColor.withOpacity(0.1),
-                                child: Icon(
-                                  stockIcon,
-                                  color: stockColor,
-                                  size: 24,
-                                ),
-                              ),
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      produit['designation'] ?? 'Produit inconnu',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: stockColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      stockStatus,
-                                      style: TextStyle(
-                                        color: stockColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.inventory_2, size: 16, color: Colors.grey),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Quantité en stock: $quantite',
-                                        style: TextStyle(
-                                          color: stockColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              trailing: IconButton(
-                                onPressed: () => _showEditQuantityDialog(produit),
-                                icon: const Icon(Icons.edit, color: Colors.blue),
-                                tooltip: 'Modifier la quantité',
-                              ),
-                            ),
-                          );
+      body: Column(
+        children: [
+          // Barre de recherche
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterStocks,
+              decoration: InputDecoration(
+                hintText: 'Rechercher un produit...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterStocks('');
                         },
-                      ),
-                    ),
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.orange, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          // Liste des produits
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _fetchStocks,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Réessayer'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _filteredStocks.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _searchController.text.isEmpty
+                                      ? Icons.inventory_2_outlined
+                                      : Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _searchController.text.isEmpty
+                                      ? 'Aucun produit disponible'
+                                      : 'Aucun produit trouvé pour "${_searchController.text}"',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _fetchStocks,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredStocks.length,
+                              itemBuilder: (context, index) {
+                                final produit = _filteredStocks[index];
+                                final quantite = int.tryParse(produit['quantite']?.toString() ?? '0') ?? 0;
+                                final stockColor = _getStockColor(quantite);
+                                final stockIcon = _getStockIcon(quantite);
+                                final stockStatus = _getStockStatus(quantite);
+
+                                return Card(
+                                  elevation: 4,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(16),
+                                    leading: CircleAvatar(
+                                      backgroundColor: stockColor.withOpacity(0.1),
+                                      child: Icon(
+                                        stockIcon,
+                                        color: stockColor,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            produit['designation'] ?? 'Produit inconnu',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: stockColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            stockStatus,
+                                            style: TextStyle(
+                                              color: stockColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.inventory_2, size: 16, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Quantité en stock: $quantite',
+                                              style: TextStyle(
+                                                color: stockColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: IconButton(
+                                      onPressed: () => _showEditQuantityDialog(produit),
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
+                                      tooltip: 'Modifier la quantité',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+          ),
+        ],
+      ),
     );
   }
 } 
