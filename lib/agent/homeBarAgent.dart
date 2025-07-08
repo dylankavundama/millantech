@@ -7,6 +7,8 @@ import 'package:stocktrue/Produits/product.dart';
 import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/vente.dart';
 
+import '../Clients/home.dart';
+
 class HomeBarAgent extends StatefulWidget {
   const HomeBarAgent({super.key});
 
@@ -20,7 +22,7 @@ class _HomeBarAgentState extends State<HomeBarAgent> {
     const Product(),
     // const Achats(),
     const Ventes(),
-    const Paternars()
+    const HomeClient()
   ];
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,7 @@ class _HomeBarAgentState extends State<HomeBarAgent> {
             //     icon: Icon(Icons.business_center_outlined), label: "Achats"),
             BottomNavigationBarItem(icon: Icon(Icons.sell), label: "Ventes"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.person_2_outlined), label: "Partenaires")
+                icon: Icon(Icons.person_2_outlined), label: "Clients")
           ]),
     );
   }

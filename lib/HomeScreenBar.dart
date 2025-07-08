@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:stocktrue/Achats/Achats.dart';
+import 'package:stocktrue/Clients/home.dart';
 import 'package:stocktrue/Login/authentification.dart';
 import 'package:stocktrue/Paternars.dart';
 import 'package:stocktrue/Produits/product.dart';
@@ -23,7 +24,7 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
     const Ventes(),
     const MouvementStock(),
     const RapportVentes(),
-    const Paternars()
+    const HomeClient()
   ];
   @override
   Widget build(BuildContext context) {

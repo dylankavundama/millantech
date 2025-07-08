@@ -19,7 +19,7 @@ class _HomeSmartState extends State<HomeSmart> {
     const Product(),
     const Achats(),
     const Ventes(),
-    const Paternars()
+ 
   ];
   @override
   Widget build(BuildContext context) {

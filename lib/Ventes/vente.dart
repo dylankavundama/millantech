@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/Detailsventes/AddVentedetail.dart';
 import 'package:stocktrue/Ventes/ListdetVente.dart';
 import '../ip.dart';
@@ -39,7 +38,21 @@ class _VentesState extends State<Ventes> {
       final url = Uri.parse("$Adress_IP/VENTE/getvente.php");
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        setState(() => ventes = List.from(jsonDecode(response.body)));
+        List fetchedVentes = List.from(jsonDecode(response.body));
+        // Sort the sales by 'date_vente' in descending order
+        fetchedVentes.sort((a, b) {
+          // Assuming 'date_vente' is a string in a format that can be parsed by DateTime
+          // If 'date_vente' might be null or missing, add null checks
+          final dateA = DateTime.tryParse(a["date_vente"] ?? '');
+          final dateB = DateTime.tryParse(b["date_vente"] ?? '');
+
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1; // Put null dates at the end
+          if (dateB == null) return -1; // Put null dates at the end
+
+          return dateB.compareTo(dateA); // Descending order
+        });
+        setState(() => ventes = fetchedVentes);
       }
     } catch (_) {}
   }
@@ -263,7 +276,6 @@ class _VentesState extends State<Ventes> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Ventes")),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ventes.isEmpty
@@ -272,25 +284,39 @@ class _VentesState extends State<Ventes> {
                   itemCount: ventes.length,
                   itemBuilder: (context, i) {
                     final v = ventes[i];
-                    return ListTile(
-                      title: Text(v["client"] ?? "Client inconnu"),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () =>
-                            supprimerVente(v["id_vente"].toString()),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Lisventedet(
-                              v["client"].toString(),
-                              v["id_vente"].toString(),
-                            ),
-                          ),
-                        );
-                      },
-                    );
+                    return  Card(
+  elevation: 2,
+  margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  child: ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    leading: const Icon(Icons.person, color: Colors.blueAccent),
+    title: Text(
+      v["client"] ?? "Client inconnu",
+      style: const TextStyle(fontWeight: FontWeight.bold),
+    ),
+    subtitle: v["date_vente"] != null
+        ? Text("Date: ${v["date_vente"]}")
+        : const Text("Date inconnue"),
+    trailing: IconButton(
+      icon: const Icon(Icons.delete, color: Colors.red),
+      tooltip: "Supprimer cette vente",
+      onPressed: () => supprimerVente(v["id_vente"].toString()),
+    ),
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Lisventedet(
+            v["client"].toString(),
+            v["id_vente"].toString(),
+          ),
+        ),
+      );
+    },
+  ),
+);
+
                   },
                 ),
       floatingActionButton: FloatingActionButton(
