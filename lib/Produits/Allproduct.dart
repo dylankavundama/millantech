@@ -48,7 +48,7 @@ class _AllproductState extends State<Allproduct> {
       } else {
         setState(() {
           isLoading = false;
-          _errorMessage = "Erreur serveur : \\${response.statusCode}";
+          _errorMessage = "Erreur serveur : \${response.statusCode}";
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage!)),
@@ -228,11 +228,11 @@ class _AllproductState extends State<Allproduct> {
                                             ),
                                           ),
                                           Text(
-                                            "Prix: \\${produit["prixu"]} \$",
+                                            "Prix: ${produit["prixu"]} \$",
                                             style: const TextStyle(fontSize: 17, color: Colors.grey),
                                           ),
                                           Text(
-                                            "Type: \\${produit["categorie"]}",
+                                            "Type: ${produit["categorie"]}",
                                             style: const TextStyle(
                                               fontSize: 16,
                                               color: Color.fromARGB(255, 102, 101, 101),
