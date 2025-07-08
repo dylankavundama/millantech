@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/Util.dart';
 import 'package:stocktrue/Ventes/ListdetVente.dart';
+import 'package:stocktrue/Ventes/rapport_ventes.dart';
 import 'package:stocktrue/Ventes/report.dart';
 import '../ip.dart';
 
@@ -165,8 +166,8 @@ class _VentesState extends State<Ventes> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => report()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => RapportVentes()));
             },
             icon: const Icon(Icons.file_download_done_outlined),
           )

@@ -338,47 +338,47 @@ class _HomeClientState extends State<HomeClient> {
                                 },
                               ),
 
-                              // Bouton Supprimer
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => CupertinoAlertDialog(
-                                      title: const Text(
-                                          "Voulez-vous vraiment supprimer ?"),
-                                      actions: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () {
-                                                delrecord(data[index]
-                                                            ["id_client"]
-                                                        .toString()) // Corrected to id_client
-                                                    .then((_) {
-                                                  Navigator.pop(
-                                                      context); // Close dialog after action
-                                                });
-                                              },
-                                              child: const Text("Effectuer"),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(
-                                                    context); // Close dialog
-                                              },
-                                              child: const Text("Annuler"),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
+                              // // Bouton Supprimer
+                              // IconButton(
+                              //   icon:
+                              //       const Icon(Icons.delete, color: Colors.red),
+                              //   onPressed: () {
+                              //     showDialog(
+                              //       context: context,
+                              //       builder: (context) => CupertinoAlertDialog(
+                              //         title: const Text(
+                              //             "Voulez-vous vraiment supprimer ?"),
+                              //         actions: [
+                              //           Row(
+                              //             mainAxisAlignment:
+                              //                 MainAxisAlignment.center,
+                              //             children: [
+                              //               TextButton(
+                              //                 onPressed: () {
+                              //                   delrecord(data[index]
+                              //                               ["id_client"]
+                              //                           .toString()) // Corrected to id_client
+                              //                       .then((_) {
+                              //                     Navigator.pop(
+                              //                         context); // Close dialog after action
+                              //                   });
+                              //                 },
+                              //                 child: const Text("Effectuer"),
+                              //               ),
+                              //               TextButton(
+                              //                 onPressed: () {
+                              //                   Navigator.pop(
+                              //                       context); // Close dialog
+                              //                 },
+                              //                 child: const Text("Annuler"),
+                              //               ),
+                              //             ],
+                              //           ),
+                              //         ],
+                              //       ),
+                              //     );
+                              //   },
+                              // ),
                             ],
                           ),
                         ),
