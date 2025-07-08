@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/Util.dart';
+import 'package:stocktrue/Ventes/Detailsventes/AddVentedetail.dart';
 import 'package:stocktrue/Ventes/ListdetVente.dart';
-import 'package:stocktrue/Ventes/rapport_ventes.dart';
-import 'package:stocktrue/Ventes/report.dart';
 import '../ip.dart';
 
 class Ventes extends StatefulWidget {
@@ -16,374 +14,288 @@ class Ventes extends StatefulWidget {
 }
 
 class _VentesState extends State<Ventes> {
-  List data = [];
-  var selectedvalue;
-  var selectedname;
-  List d = []; // For clients data
-  bool _isLoading = false; // New state variable for loading
-  String _statusMessage = ''; // To display messages like "No sales available"
+  List ventes = [];
+  List clients = [];
+  String? clientSelectionne;
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Call a method to load all initial data
+    chargerDonnees();
   }
 
-  // A helper method to load all necessary data
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true; // Show loader
-      _statusMessage = ''; // Clear previous messages
-    });
-    try {
-      await Future.wait([
-        getrecord(), // Fetch sales records
-        getrecords(), // Fetch client records
-      ]);
-      if (data.isEmpty) {
-        _statusMessage = "Aucune vente disponible.";
-      }
-    } catch (e) {
-      _statusMessage = "Erreur de chargement des données: ${e.toString()}";
-      print(e); // Log the error for debugging
-    } finally {
-      setState(() {
-        _isLoading = false; // Hide loader
-      });
-    }
+  Future<void> chargerDonnees() async {
+    setState(() => isLoading = true);
+    await Future.wait([
+      chargerVentes(),
+      chargerClients(),
+    ]);
+    setState(() => isLoading = false);
   }
 
-  Future<void> getrecords() async {
-    var url = "$Adress_IP/CLIENT/getclient.php";
+  Future<void> chargerVentes() async {
     try {
-      var response = await http.get(Uri.parse(url));
+      final url = Uri.parse("$Adress_IP/VENTE/getvente.php");
+      final response = await http.get(url);
       if (response.statusCode == 200) {
-        setState(() {
-          d = jsonDecode(response.body);
-        });
-      } else {
-        bar("Erreur de chargement des clients: ${response.statusCode}");
+        setState(() => ventes = List.from(jsonDecode(response.body)));
       }
-    } catch (e) {
-      print(e);
-      bar("Erreur de connexion lors de la récupération des clients: ${e.toString()}");
-    }
+    } catch (_) {}
   }
 
-  Future<void> getrecord() async {
-    var url = "$Adress_IP/VENTE/getvente.php";
+  Future<void> chargerClients() async {
     try {
-      var response = await http.get(Uri.parse(url));
+      final url = Uri.parse("$Adress_IP/CLIENT/getclient.php");
+      final response = await http.get(url);
       if (response.statusCode == 200) {
-        setState(() {
-          data = jsonDecode(response.body);
-        });
-      } else {
-        bar("Erreur de chargement des ventes: ${response.statusCode}");
+        setState(() => clients = List.from(jsonDecode(response.body)));
       }
-    } catch (e) {
-      print(e);
-      bar("Erreur de connexion lors de la récupération des ventes: ${e.toString()}");
+    } catch (_) {}
+  }
+
+  Future<void> supprimerVente(String idVente) async {
+    setState(() => isLoading = true);
+    try {
+      final url = Uri.parse("$Adress_IP/VENTE/deletevente.php");
+      await http.post(url, body: {"id": idVente});
+      await chargerVentes();
+    } catch (_) {}
+    setState(() => isLoading = false);
+  }
+
+  Future<void> ajouterClient(BuildContext context,
+      {BuildContext? venteDialogContext}) async {
+    final nomCtrl = TextEditingController();
+    final telCtrl = TextEditingController();
+    String? idNouveauClient;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Nouveau client"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomCtrl,
+              decoration: const InputDecoration(labelText: "Nom"),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: telCtrl,
+              decoration: const InputDecoration(labelText: "Téléphone"),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Annuler"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nomCtrl.text.trim().isEmpty || telCtrl.text.trim().isEmpty)
+                return;
+              final url = Uri.parse("$Adress_IP/CLIENT/insertclient.php");
+              final response = await http.post(url, body: {
+                "noms": nomCtrl.text.trim(),
+                "telephone": telCtrl.text.trim(),
+                "adresse": "",
+                "mail": ""
+              });
+              if (response.statusCode == 200) {
+                await chargerClients();
+                final nouveau = clients.firstWhere(
+                  (c) =>
+                      c["noms"] == nomCtrl.text.trim() &&
+                      c["telephone"] == telCtrl.text.trim(),
+                  orElse: () => null,
+                );
+                if (nouveau != null) {
+                  idNouveauClient = nouveau["id_client"].toString();
+                  // Créer automatiquement une vente pour ce client
+                  final urlVente =
+                      Uri.parse("$Adress_IP/VENTE/insertvente.php");
+                  final req = http.MultipartRequest('POST', urlVente);
+                  req.fields['client_id'] = idNouveauClient!;
+                  final res = await req.send();
+                  if (res.statusCode == 200) {
+                    await chargerVentes();
+                  }
+                }
+              }
+              Navigator.pop(ctx); // Ferme le dialogue ajout client
+              if (venteDialogContext != null) {
+                Navigator.pop(
+                    venteDialogContext); // Ferme aussi le dialogue nouvelle vente
+              }
+              // Rafraîchir la page Ventes après le pop
+              await chargerDonnees();
+            },
+            child: const Text("Enregistrer"),
+          ),
+        ],
+      ),
+    );
+    if (idNouveauClient != null) {
+      setState(() => clientSelectionne = idNouveauClient);
     }
   }
 
-  void bar(String description) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(description),
-        duration: const Duration(seconds: 3),
+  Future<bool> verifierStockGlobal() async {
+    try {
+      final url = Uri.parse("$Adress_IP/PRODUIT/getproduit.php");
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final produits = List.from(jsonDecode(response.body));
+        print('DEBUG STOCK PRODUITS:');
+        for (var p in produits) {
+          print(
+              'Produit: ${p["designation"] ?? p["id_produit"]} - Stock: ${p["quantite"]}');
+        }
+        return produits.any((p) =>
+            int.tryParse(p["quantite"].toString()) != null &&
+            int.parse(p["quantite"].toString()) > 0);
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification du stock: $e');
+    }
+    return false;
+  }
+
+  Future<void> ajouterVente(BuildContext context) async {
+    clientSelectionne = null;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Nouvelle vente"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: clientSelectionne,
+              items: clients.map<DropdownMenuItem<String>>((c) {
+                return DropdownMenuItem(
+                  value: c["id_client"].toString(),
+                  child: Text(c["noms"] ?? "Client inconnu"),
+                );
+              }).toList(),
+              onChanged: (v) => setState(() => clientSelectionne = v),
+              decoration: const InputDecoration(labelText: "Client"),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              icon: const Icon(Icons.person_add, color: Colors.orange),
+              label: const Text("Ajouter un client"),
+              onPressed: () async {
+                await ajouterClient(context, venteDialogContext: ctx);
+                // Pas besoin de relancer ajouterVente, tout est fermé
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Annuler"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (clientSelectionne == null) return;
+              // Vérifier le stock global avant d'enregistrer la vente
+              final stockOk = await verifierStockGlobal();
+              if (!stockOk) {
+                // ignore: use_build_context_synchronously
+                await showDialog(
+                  context: context,
+                  builder: (dctx) => AlertDialog(
+                    title: const Text("Stock insuffisant"),
+                    content: const Text(
+                        "Aucun produit n'est en stock. Impossible de créer une vente."),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dctx),
+                        child: const Text("OK"),
+                      ),
+                    ],
+                  ),
+                );
+                Navigator.pop(ctx); // Ferme le dialogue de création de vente
+                return;
+              }
+              final url = Uri.parse("$Adress_IP/VENTE/insertvente.php");
+              final req = http.MultipartRequest('POST', url);
+              req.fields['client_id'] = clientSelectionne!;
+              final res = await req.send();
+              if (res.statusCode == 200) {
+                await chargerVentes();
+                // On retrouve la dernière vente du client
+                final ventesClient = ventes
+                    .where(
+                        (v) => v["client_id"].toString() == clientSelectionne)
+                    .toList();
+                ventesClient.sort((a, b) => b["id_vente"]
+                    .toString()
+                    .compareTo(a["id_vente"].toString()));
+                final lastVente =
+                    ventesClient.isNotEmpty ? ventesClient.first : null;
+                Navigator.pop(ctx);
+                if (lastVente != null) {
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddVenDetail(lastVente["id_vente"].toString()),
+                      ),
+                    );
+                  });
+                }
+              }
+            },
+            child: const Text("Enregistrer"),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> delrecord(var id) async {
-    setState(() {
-      _isLoading = true; // Show loader
-    });
-    try {
-      var url = "$Adress_IP/VENTE/deletevente.php";
-      String newid = id.toString();
-      var result = await http.post(Uri.parse(url), body: {
-        "id": newid.toString(),
-      });
-      var reponse = jsonDecode(result.body);
-
-      if (reponse["Success"] == "Succes") {
-        bar("Suppression réussie");
-        await getrecord(); // Refresh data after deletion
-      } else {
-        bar("Erreur de suppression: ${reponse["Message"] ?? ""}");
-      }
-    } catch (e) {
-      print(e);
-      bar("Erreur de connexion lors de la suppression: ${e.toString()}");
-    } finally {
-      setState(() {
-        _isLoading = false; // Hide loader
-      });
-    }
-  }
-
-  Future<void> savadatas() async {
-    setState(() {
-      _isLoading = true; // Show loader
-    });
-    try {
-      var url = "$Adress_IP/VENTE/insertvente.php";
-      Uri ulr = Uri.parse(url);
-      var request = http.MultipartRequest('POST', ulr);
-      request.fields['client_id'] = selectedname;
-      var res = await request.send();
-      var response = await http.Response.fromStream(res);
-
-      if (response.statusCode == 200) {
-        bar("Ajout réussi");
-        await getrecord(); // Refresh data after save
-      } else {
-        bar("Erreur d'ajout: ${response.statusCode}");
-      }
-    } catch (e) {
-      bar(e.toString());
-      print(e);
-    } finally {
-      setState(() {
-        _isLoading = false; // Hide loader
-      });
-      if (mounted) Navigator.pop(context); // Close dialog if still mounted
-    }
-  }
-
-  double screenheigth = 0;
-  double screenwith = 0;
-
   @override
   Widget build(BuildContext context) {
-    screenwith = MediaQuery.of(context).size.width;
-    screenheigth = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => RapportVentes()));
-            },
-            icon: const Icon(Icons.file_download_done_outlined),
-          )
-        ],
-        title: const AppTitle(),
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator()) // Show loader when loading
-          : _statusMessage.isNotEmpty
-              ? Center(
-                  child: Text(
-                    _statusMessage,
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                )
+      appBar: AppBar(title: const Text("Ventes")),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ventes.isEmpty
+              ? const Center(child: Text("Aucune vente disponible."))
               : ListView.builder(
-                  itemCount: data.length,
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 14.0),
-                        padding: const EdgeInsets.all(0.0),
-                        height: 90,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          color: Colors.white,
-                          boxShadow: const [
-                            BoxShadow(
-                              blurRadius: 1.0,
-                              spreadRadius: 0.0,
-                              color: Colors.transparent,
-                            )
-                          ],
-                        ),
-                        child: Card(
-                          elevation: 0.5,
-                          child: ListTile(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => Lisventedet(
-                                    data[index]["client"].toString(),
-                                    data[index]["id_vente"].toString(),
-                                  ),
-                                ),
-                              );
-                            },
-                            title: Text(
-                              data[index]["client"] ??
-                                  "N/A", // Handle potential null
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            leading: Text(
-                              "${index + 1}. ",
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w400),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                      Icons.insert_drive_file_sharp,
-                                      color: Color.fromARGB(255, 11, 92, 23)),
-                                  onPressed: () {
-                                    // Action de modification ou affichage modal - not implemented yet
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) =>
-                                          CupertinoAlertDialog(
-                                        title: const Text(
-                                            "Voulez-vous vraiment supprimer ?"),
-                                        actions: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  delrecord(data[index]
-                                                              ["id_vente"]
-                                                          .toString())
-                                                      .then((_) {
-                                                    // After deletion, refresh the list and close dialog
-                                                    Navigator.pop(context);
-                                                  });
-                                                },
-                                                child: const Text("Effectuer"),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.pop(
-                                                      context); // Close dialog
-                                                },
-                                                child: const Text("Annuler"),
-                                              ),
-                                            ],
-                                          )
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                  itemCount: ventes.length,
+                  itemBuilder: (context, i) {
+                    final v = ventes[i];
+                    return ListTile(
+                      title: Text(v["client"] ?? "Client inconnu"),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () =>
+                            supprimerVente(v["id_vente"].toString()),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Lisventedet(
+                              v["client"].toString(),
+                              v["id_vente"].toString(),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Reset selected values for new entry
-          setState(() {
-            selectedvalue = null;
-            selectedname = null;
-          });
-
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(20.0),
-                  height: 230,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: ListView(
-                    children: [
-                      const Text(
-                        "Faire une Vente",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                      DropdownButtonFormField<String>(
-                        items: d.map((list) {
-                          return DropdownMenuItem<String>(
-                            value: list["id_client"].toString(),
-                            child: Text(list["noms"]),
-                          );
-                        }).toList(),
-                        value: selectedvalue,
-                        icon: const Icon(Icons.arrow_drop_down_circle),
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons
-                              .person), // Changed to person icon for client
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                            borderSide: BorderSide(color: Colors.orange),
-                          ),
-                          hintText: "Client",
-                          labelText: "Client",
-                        ),
-                        onChanged: (String? value) {
-                          setState(() {
-                            selectedvalue = value;
-                            selectedname = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(
-                        height: 15,
-                      ),
-                      ElevatedButton.icon(
-                        icon: const Icon(
-                          Icons.save_alt_outlined,
-                          color: Colors.black,
-                        ),
-                        label: const Text(
-                          "Enregistrer",
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        onPressed: () {
-                          if (selectedname != null) {
-                            savadatas();
-                          } else {
-                            bar("Veuillez sélectionner un client.");
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 227, 174, 131),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-        child: const Icon(
-          Icons.add,
-          color: Colors.black,
-        ),
+        onPressed: () => ajouterVente(context),
+        child: const Icon(Icons.add),
       ),
     );
   }
