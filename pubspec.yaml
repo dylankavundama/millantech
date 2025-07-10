@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   # flutter_slidable: any
   http: 
+  dropdown_search: ^5.0.0 
   syncfusion_flutter_pdf:  
   image_picker: 
   path_provider: 

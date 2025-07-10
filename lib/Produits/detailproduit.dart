@@ -148,6 +148,7 @@ class _DetailproduitState extends State<Detailproduit> {
       if (response.statusCode == 200) {
         _showSnackBar("Produit supprimé avec succès !");
         // Naviguer vers l'écran d'accueil après suppression réussie
+        // ignore: use_build_context_synchronously
         Navigator.pushAndRemoveUntil(
           context,
           CupertinoPageRoute(builder: (context) => const HomeBarAdmin()),
@@ -247,7 +248,8 @@ class _DetailproduitState extends State<Detailproduit> {
               icon: const Icon(Icons.delete),
               onPressed: () => _confirmDelete(), // Appel de la confirmation
               tooltip: "Supprimer le produit",
-              color: Colors.redAccent, // Couleur distinctive pour la suppression
+              color:
+                  Colors.redAccent, // Couleur distinctive pour la suppression
             ),
         ],
       ),
