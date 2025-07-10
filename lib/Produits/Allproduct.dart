@@ -40,15 +40,21 @@ class _AllproductState extends State<Allproduct> {
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
+        final List<dynamic> produits = jsonDecode(response.body);
+
+        // Tri décroissant par id_produit (du plus récent au plus ancien)
+        produits.sort((a, b) => int.parse(b['id_produit'].toString())
+            .compareTo(int.parse(a['id_produit'].toString())));
+
         setState(() {
-          dataens = jsonDecode(response.body);
+          dataens = produits;
           isLoading = false;
           _errorMessage = null;
         });
       } else {
         setState(() {
           isLoading = false;
-          _errorMessage = "Erreur serveur : \${response.statusCode}";
+          _errorMessage = "Erreur serveur : ${response.statusCode}";
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage!)),
@@ -87,7 +93,10 @@ class _AllproductState extends State<Allproduct> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
+                ? Center(
+                    child: Text(_errorMessage!,
+                        style: const TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold)))
                 : dataens.isEmpty
                     ? const Center(child: Text("Aucun produit trouvé."))
                     : ListView.builder(
@@ -95,7 +104,9 @@ class _AllproductState extends State<Allproduct> {
                         itemBuilder: (context, index) {
                           final produit = dataens[index];
                           final imageUrl = (produit["image"] ?? "").toString();
-                          final quantite = int.tryParse(produit["quantite"]?.toString() ?? '0') ?? 0;
+                          final quantite = int.tryParse(
+                                  produit["quantite"]?.toString() ?? '0') ??
+                              0;
                           final stockColor = _getStockColor(quantite);
                           final stockIcon = _getStockIcon(quantite);
                           final stockStatus = _getStockStatus(quantite);
@@ -113,7 +124,8 @@ class _AllproductState extends State<Allproduct> {
                               );
                             },
                             child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 10),
                               height: 200,
                               child: Stack(
                                 children: [
@@ -127,10 +139,12 @@ class _AllproductState extends State<Allproduct> {
                                         width: width * 0.91,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16.0),
+                                          borderRadius:
+                                              BorderRadius.circular(16.0),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.grey.withOpacity(0.15),
+                                              color:
+                                                  Colors.grey.withOpacity(0.15),
                                               offset: const Offset(0.0, 2.0),
                                               blurRadius: 12.0,
                                               spreadRadius: 2.0,
@@ -147,27 +161,37 @@ class _AllproductState extends State<Allproduct> {
                                       elevation: 10.0,
                                       shadowColor: Colors.grey.withOpacity(0.5),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(15.0),
+                                        borderRadius:
+                                            BorderRadius.circular(15.0),
                                       ),
                                       child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10.0),
+                                        borderRadius:
+                                            BorderRadius.circular(10.0),
                                         child: imageUrl.isEmpty
                                             ? Container(
                                                 height: 170,
                                                 width: 140,
                                                 color: Colors.grey.shade200,
-                                                child: const Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
+                                                child: const Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 60,
+                                                    color: Colors.grey),
                                               )
                                             : Image.network(
                                                 imageUrl,
                                                 height: 170,
                                                 width: 140,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                errorBuilder: (context, error,
+                                                        stackTrace) =>
+                                                    Container(
                                                   height: 170,
                                                   width: 140,
                                                   color: Colors.grey.shade200,
-                                                  child: const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                                                  child: const Icon(
+                                                      Icons.broken_image,
+                                                      size: 60,
+                                                      color: Colors.grey),
                                                 ),
                                               ),
                                       ),
@@ -180,7 +204,8 @@ class _AllproductState extends State<Allproduct> {
                                       height: 200,
                                       width: 150,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             produit["designation"],
@@ -212,11 +237,15 @@ class _AllproductState extends State<Allproduct> {
                                             ],
                                           ),
                                           Container(
-                                            margin: const EdgeInsets.only(top: 2, bottom: 4),
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            margin: const EdgeInsets.only(
+                                                top: 2, bottom: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: stockColor.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color:
+                                                  stockColor.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               stockStatus,
@@ -229,13 +258,16 @@ class _AllproductState extends State<Allproduct> {
                                           ),
                                           Text(
                                             "Prix: ${produit["prixu"]} \$",
-                                            style: const TextStyle(fontSize: 17, color: Colors.grey),
+                                            style: const TextStyle(
+                                                fontSize: 17,
+                                                color: Colors.grey),
                                           ),
                                           Text(
                                             "Type: ${produit["categorie"]}",
                                             style: const TextStyle(
                                               fontSize: 16,
-                                              color: Color.fromARGB(255, 102, 101, 101),
+                                              color: Color.fromARGB(
+                                                  255, 102, 101, 101),
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -259,7 +291,7 @@ class _AllproductState extends State<Allproduct> {
               child: FloatingActionButton(
                 onPressed: () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (context) =>   AddProduct()));
+                      MaterialPageRoute(builder: (context) => AddProduct()));
                 },
                 disabledElevation: 10,
                 child: const Icon(Icons.add),
