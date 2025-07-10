@@ -11,6 +11,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:printing/printing.dart';
+import 'package:dropdown_search/dropdown_search.dart'; // Import dropdown_search
 
 import '../Achats/Listdetail.dart'; // Assurez-vous que Achatdetail est défini ici
 
@@ -95,8 +96,12 @@ class _LisventedetState extends State<Lisventedet> {
             _productsMap[product["id_produit"].toString()] = product;
           }
 
+          // If a product was selected but is now out of stock or removed, clear selection
           if (selectedProductId != null &&
-              !_productsMap.containsKey(selectedProductId)) {
+              (!_productsMap.containsKey(selectedProductId) ||
+                  int.tryParse(_productsMap[selectedProductId]!["quantite"]
+                          .toString()) ==
+                      0)) {
             selectedProductId = null;
             prixuController.clear();
             quantiteController.clear();
@@ -106,13 +111,8 @@ class _LisventedetState extends State<Lisventedet> {
             _updateProductDetailsFromSelection(
                 _productsMap[selectedProductId]!);
           }
-
-          if (_productsListForDropdown.isNotEmpty &&
-              selectedProductId == null) {
-            selectedProductId =
-                _productsListForDropdown.first["id_produit"].toString();
-            _updateProductDetailsFromSelection(_productsListForDropdown.first);
-          }
+          // No need to auto-select the first product if none is selected,
+          // let the user explicitly select one using the search feature.
         });
       } else {
         _showSnackBar(
@@ -396,6 +396,7 @@ class _LisventedetState extends State<Lisventedet> {
                 ),
                 IconButton(
                   onPressed: () {
+                    // Clear controllers and selected product before showing dialog
                     quantiteController.clear();
                     prixuController.clear();
                     selectedProductId = null;
@@ -405,138 +406,204 @@ class _LisventedetState extends State<Lisventedet> {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
-                          return Dialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(10.0),
-                              height: 500,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              child: ListView(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      children: [
-                                        const Text(
-                                          "Ajouter plus de détail",
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w300),
-                                        ),
-                                        //    const SizedBox(height: 25),
-                                        DropdownButtonFormField<String>(
-                                          value: selectedProductId,
-                                          items: _productsListForDropdown
-                                              .map<DropdownMenuItem<String>>(
-                                                  (product) {
-                                            return DropdownMenuItem<String>(
-                                              value: product["id_produit"]
-                                                  .toString(),
-                                              child: Text(
-                                                  "${product["designation"]} (${product["quantite"]})"),
-                                            );
-                                          }).toList(),
-                                          // icon: const Icon(Icons.arrow_drop_down_circle),
-
-                                          onChanged: (newValue) {
-                                            setState(() {
-                                              selectedProductId = newValue;
-                                              if (newValue != null) {
-                                                final selectedProduct =
-                                                    _productsMap[newValue];
-                                                if (selectedProduct != null) {
-                                                  _updateProductDetailsFromSelection(
-                                                      selectedProduct);
-                                                } else {
-                                                  prixuController.clear();
-                                                  quantiteController.clear();
-                                                  _currentSelectedProductStock =
-                                                      0;
-                                                }
-                                              } else {
-                                                prixuController.clear();
-                                                quantiteController.clear();
-                                                _currentSelectedProductStock =
-                                                    0;
-                                              }
-                                            });
-                                          },
-                                        ),
-                                        const SizedBox(height: 15),
-
-                                        TextField(
-                                          controller: quantiteController,
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            prefixIcon: Icon(Icons
-                                                .production_quantity_limits_rounded),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(10)),
-                                              borderSide: BorderSide(
-                                                  color: Colors.orange),
-                                            ),
-                                            hintText: "Quantité",
-                                            labelText: "Quantité",
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        TextField(
-                                          controller: prixuController,
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            prefixIcon:
-                                                Icon(Icons.monetization_on),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(10)),
-                                              borderSide: BorderSide(
-                                                  color: Colors.orange),
-                                            ),
-                                            hintText: "Prix de l'article",
-                                            labelText: "Prix",
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 5.0, left: 5),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const SizedBox(width: 15),
-                                              ElevatedButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : _saveNewSaleDetail, // Désactivé pendant le chargement
-                                                child: _isLoading
-                                                    ? const SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
-                                                    : const Text('Vendre'),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                      ],
-                                    ),
+                          // Use StatefulBuilder to manage the dialog's internal state
+                          return StatefulBuilder(
+                            builder: (BuildContext context,
+                                StateSetter setDialogState) {
+                              return Dialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10.0),
+                                  height:
+                                      500, // May need adjustment based on content
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10.0),
                                   ),
-                                ],
-                              ),
-                            ),
+                                  child: ListView(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize
+                                              .min, // Use min to fit content
+                                          children: [
+                                            const Text(
+                                              "Ajouter plus de détail",
+                                              style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w300),
+                                            ),
+                                            const SizedBox(height: 25),
+                                            // --- DropdownSearch for Products ---
+                                            DropdownSearch<
+                                                Map<String, dynamic>>(
+                                              popupProps: PopupProps.menu(
+                                                showSearchBox: true,
+                                                searchFieldProps:
+                                                    TextFieldProps(
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    hintText:
+                                                        "Rechercher un produit...",
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                    contentPadding:
+                                                        EdgeInsets.fromLTRB(
+                                                            12, 12, 8, 0),
+                                                  ),
+                                                ),
+                                                itemBuilder: (context, product,
+                                                    isSelected) {
+                                                  return ListTile(
+                                                    title: Text(product[
+                                                            "designation"] ??
+                                                        "Produit inconnu"),
+                                                    subtitle: Text(
+                                                        "Stock: ${product["quantite"] ?? 0}"),
+                                                  );
+                                                },
+                                              ),
+                                              dropdownDecoratorProps:
+                                                  DropDownDecoratorProps(
+                                                dropdownSearchDecoration:
+                                                    const InputDecoration(
+                                                  labelText: "Produit",
+                                                  hintText:
+                                                      "Sélectionner un produit",
+                                                  border: OutlineInputBorder(),
+                                                  contentPadding:
+                                                      EdgeInsets.fromLTRB(
+                                                          12, 12, 8, 0),
+                                                ),
+                                              ),
+                                              items: _productsListForDropdown
+                                                  .cast<Map<String, dynamic>>(),
+                                              itemAsString: (Map<String,
+                                                          dynamic>
+                                                      product) =>
+                                                  "${product["designation"]} (${product["quantite"] ?? 0})",
+                                              selectedItem: _productsMap.values
+                                                  .firstWhere(
+                                                (p) =>
+                                                    p["id_produit"]
+                                                        .toString() ==
+                                                    selectedProductId,
+                                                orElse: () => null,
+                                              ) as Map<String, dynamic>?,
+                                              onChanged: (Map<String, dynamic>?
+                                                  newValue) {
+                                                setDialogState(() {
+                                                  // Use setDialogState to update dialog's UI
+                                                  selectedProductId =
+                                                      newValue?["id_produit"]
+                                                          .toString();
+                                                  if (newValue != null) {
+                                                    _updateProductDetailsFromSelection(
+                                                        newValue);
+                                                  } else {
+                                                    prixuController.clear();
+                                                    quantiteController.clear();
+                                                    _currentSelectedProductStock =
+                                                        0;
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                            // --- End DropdownSearch ---
+
+                                            const SizedBox(height: 15),
+
+                                            TextField(
+                                              controller: quantiteController,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              decoration: InputDecoration(
+                                                prefixIcon: const Icon(Icons
+                                                    .production_quantity_limits_rounded),
+                                                border:
+                                                    const OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                          Radius.circular(10)),
+                                                  borderSide: BorderSide(
+                                                      color: Colors.orange),
+                                                ),
+                                                hintText: "Quantité",
+                                                labelText:
+                                                    "Quantité (Dispo: $_currentSelectedProductStock)", // Show available stock
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            TextField(
+                                              controller: prixuController,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              decoration: const InputDecoration(
+                                                prefixIcon:
+                                                    Icon(Icons.monetization_on),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                          Radius.circular(10)),
+                                                  borderSide: BorderSide(
+                                                      color: Colors.orange),
+                                                ),
+                                                hintText: "Prix de l'article",
+                                                labelText: "Prix",
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 5.0, left: 5),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const SizedBox(width: 15),
+                                                  ElevatedButton(
+                                                    onPressed: _isLoading
+                                                        ? null
+                                                        : () {
+                                                            _saveNewSaleDetail()
+                                                                .then((_) {
+                                                              // After saving, re-fetch products to ensure stock is updated in the dialog
+                                                              setDialogState(
+                                                                  () {
+                                                                // Update dialog's state
+                                                                _loadProducts();
+                                                              });
+                                                            });
+                                                          }, // Wrap in a function to re-load products after save
+                                                    child: _isLoading
+                                                        ? const SizedBox(
+                                                            width: 20,
+                                                            height: 20,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                              color:
+                                                                  Colors.white,
+                                                              strokeWidth: 2,
+                                                            ),
+                                                          )
+                                                        : const Text('Vendre'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -598,10 +665,12 @@ class _LisventedetState extends State<Lisventedet> {
                     ],
                     rows: data
                         .map((item) => DataRow(cells: [
-                              DataCell(Text(item['produit'])),
-                              DataCell(Text(item['quantite'].toString())),
-                              DataCell(Text(item['prixu'].toString())),
-                              DataCell(Text(item['prix_total'].toString()))
+                              DataCell(Text(item['produit'] ?? '')),
+                              DataCell(
+                                  Text(item['quantite']?.toString() ?? '')),
+                              DataCell(Text(item['prixu']?.toString() ?? '')),
+                              DataCell(
+                                  Text(item['prix_total']?.toString() ?? ''))
                             ]))
                         .toList(),
                   ),
