@@ -178,7 +178,7 @@ class _AllproductState extends State<Allproduct> {
                                                     color: Colors.grey),
                                               )
                                             : Image.network(
-                                                imageUrl,
+                                                '$Adress_IP/PRODUIT/images/$imageUrl',
                                                 height: 170,
                                                 width: 140,
                                                 fit: BoxFit.cover,
