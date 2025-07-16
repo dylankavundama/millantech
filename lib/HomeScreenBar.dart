@@ -55,7 +55,7 @@ class _HomeBarAdminState extends State<HomeBarAdmin> {
             BottomNavigationBarItem(
                 icon: Icon(Icons.analytics), label: "Rapports"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.person_2_outlined), label: "Partenaires")
+                icon: Icon(Icons.person_2_outlined), label: "Clients"),
           ]),
     );
   }

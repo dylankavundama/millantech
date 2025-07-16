@@ -4,6 +4,6 @@
 // }
 
 // ignore: non_constant_identifier_names
-// String Adress_IP = "https://easykivu.com/phonexa";
+String Adress_IP = "https://easykivu.com/phonexa";
 
-String Adress_IP = "http://192.168.1.71/API_VENTE";
+// String Adress_IP = "http://192.168.1.71/API_VENTE";

@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/HomeScreenBar.dart';
 import 'package:stocktrue/ip.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 
 class AddProduct extends StatefulWidget {
   const AddProduct({super.key});
@@ -34,8 +32,6 @@ class _AddProductState extends State<AddProduct> {
   final _formKey = GlobalKey<FormState>();
 
   String? _imageInputError;
-  File? _pickedImageFile;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -60,17 +56,6 @@ class _AddProductState extends State<AddProduct> {
     });
   }
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _pickedImageFile = File(pickedFile.path);
-        _imageController.text = pickedFile.path;
-        _imageInputError = null;
-      });
-    }
-  }
-
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) {
       _showSnackBar('Veuillez corriger les erreurs dans le formulaire.');
@@ -82,18 +67,19 @@ class _AddProductState extends State<AddProduct> {
       return;
     }
 
-    if (_pickedImageFile == null) {
+    if (_imageController.text.trim().isEmpty) {
       setState(() {
-        _imageInputError = 'L\'image du produit est obligatoire.';
+        _imageInputError = 'Le lien de l\'image est obligatoire.';
       });
-      _showSnackBar('Veuillez sélectionner une image.');
+      _showSnackBar('Veuillez fournir un lien d\'image.');
       return;
     }
 
     setState(() => _isSavingProduct = true);
 
     try {
-      final uri = Uri.parse("$Adress_IP/PRODUIT/insertproduit.php");
+      final uri = Uri.parse(
+          "https://www.easykivu.com/phonexa/PRODUIT/insertproduit.php");
       final request = http.MultipartRequest("POST", uri);
 
       request.fields.addAll({
@@ -106,10 +92,8 @@ class _AddProductState extends State<AddProduct> {
         'prixu': _priceController.text.trim().isEmpty
             ? '0'
             : _priceController.text.trim(),
+        'image': _imageController.text.trim(),
       });
-      // Ajout de l'image sélectionnée
-      request.files.add(
-          await http.MultipartFile.fromPath('image', _pickedImageFile!.path));
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
@@ -211,13 +195,6 @@ class _AddProductState extends State<AddProduct> {
   }
 
   Widget _buildImagePreview() {
-    if (_pickedImageFile != null) {
-      return Image.file(
-        _pickedImageFile!,
-        height: imageContainerHeight,
-        fit: BoxFit.contain,
-      );
-    }
     final url = _imageController.text.trim();
     if (url.isEmpty) {
       return Container(
@@ -235,7 +212,7 @@ class _AddProductState extends State<AddProduct> {
         height: imageContainerHeight,
         color: Colors.grey.shade200,
         child: const Center(
-            child: Icon(Icons.broken_image, size: 60, color: Colors.red)),
+            child: Icon(Icons.broken_image, size: 60, color: Colors.grey)),
       ),
     );
   }
@@ -244,7 +221,8 @@ class _AddProductState extends State<AddProduct> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter un produit'),
+        title: const Text('Nouveau Produit',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: _isLoadingCategories
@@ -256,16 +234,21 @@ class _AddProductState extends State<AddProduct> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: _buildImagePreview(),
+                    _buildImagePreview(),
+                    const SizedBox(height: fieldSpacing),
+                    _buildFormField(
+                      controller: _imageController,
+                      labelText: 'Lien de l\'image',
+                      hintText: 'https://.../image.jpg',
+                      icon: Icons.image,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Le lien de l\'image est obligatoire.';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) => setState(() {}),
                     ),
-                    if (_imageInputError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(_imageInputError!,
-                            style: const TextStyle(color: Colors.red)),
-                      ),
                     const SizedBox(height: fieldSpacing),
                     _buildFormField(
                       controller: _nameController,

@@ -1,11 +1,197 @@
 import 'dart:convert';
-import 'dart:io'; // Maintenu car présent dans votre code initial, même si inutilisé pour le détail produit seul
-import 'package:flutter/cupertino.dart'; // Maintenu pour CupertinoPageRoute
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:stocktrue/HomeScreenBar.dart';
-import '../ip.dart'; // Assurez-vous que ce chemin est correct et que 'Adress_IP' est défini.
+import '../ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class EditProductScreen extends StatefulWidget {
+  final ProductDetail product; // The product to be edited
+
+  const EditProductScreen({Key? key, required this.product}) : super(key: key);
+
+  @override
+  State<EditProductScreen> createState() => _EditProductScreenState();
+}
+
+class _EditProductScreenState extends State<EditProductScreen> {
+  final _formKey = GlobalKey<FormState>(); // Key for the form
+  late TextEditingController _designationController;
+  late TextEditingController _detailController;
+  late TextEditingController _quantityController;
+  late TextEditingController _priceController;
+  late TextEditingController _imageUrlController;
+
+  bool _isSaving = false; // To show loading indicator during save
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers with current product data
+    _designationController =
+        TextEditingController(text: widget.product.designation);
+    _detailController = TextEditingController(text: widget.product.detail);
+    _quantityController =
+        TextEditingController(text: widget.product.quantite.toString());
+    _priceController =
+        TextEditingController(text: widget.product.prixu.toStringAsFixed(2));
+    _imageUrlController = TextEditingController(text: widget.product.imageUrl);
+  }
+
+  @override
+  void dispose() {
+    // Dispose controllers to free up resources
+    _designationController.dispose();
+    _detailController.dispose();
+    _quantityController.dispose();
+    _priceController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
+  }
+
+  // Function to handle product update
+  Future<void> _updateProduct() async {
+    if (!_formKey.currentState!.validate()) {
+      return; // If form is not valid, do nothing
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final url =
+        "$Adress_IP/PRODUIT/updateproduit.php"; // Adjust to your update API endpoint
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          "id_produit": widget.product.idProduit,
+          "designation": _designationController.text,
+          "detail": _detailController.text,
+          "quantite": _quantityController.text,
+          "prixu": _priceController.text,
+          "image": _imageUrlController
+              .text, // Assuming image URL can be updated this way
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+        if (responseBody["success"] == true) {
+          // Assuming your PHP returns {"success": true} on success
+          _showSnackBar("Produit mis à jour avec succès !");
+          Navigator.pop(context, true); // Pop with true to indicate success
+        } else {
+          _showSnackBar(
+              "Échec de la mise à jour: ${responseBody["message"] ?? "Erreur inconnue"}");
+        }
+      } else {
+        _showSnackBar("Erreur serveur: ${response.statusCode}");
+      }
+    } catch (e) {
+      _showSnackBar(
+          "Erreur de connexion: Impossible de mettre à jour le produit.");
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Modifier le produit"),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _designationController,
+                decoration: const InputDecoration(labelText: "Désignation"),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Veuillez entrer une désignation.";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _detailController,
+                decoration:
+                    const InputDecoration(labelText: "Détail / Description"),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _quantityController,
+                decoration: const InputDecoration(labelText: "Quantité"),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Veuillez entrer une quantité.";
+                  }
+                  if (int.tryParse(value) == null) {
+                    return "Veuillez entrer un nombre entier valide.";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(labelText: "Prix Unitaire"),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Veuillez entrer un prix.";
+                  }
+                  if (double.tryParse(value) == null) {
+                    return "Veuillez entrer un nombre décimal valide.";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(
+                    labelText: "URL de l'image (facultatif)"),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 32),
+              _isSaving
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      onPressed: _updateProduct,
+                      icon: const Icon(Icons.save),
+                      label: const Text("Enregistrer les modifications"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // Modèle pour les détails du produit
 class ProductDetail {
@@ -25,7 +211,6 @@ class ProductDetail {
     this.imageUrl,
   });
 
-  // Factory constructor pour créer une instance depuis un JSON
   factory ProductDetail.fromJson(Map<String, dynamic> json) {
     return ProductDetail(
       idProduit: json["id_produit"].toString(),
@@ -40,7 +225,6 @@ class ProductDetail {
 
 // ignore: must_be_immutable
 class Detailproduit extends StatefulWidget {
-  // Renommés pour la clarté, mais conservés comme variables de classe pour correspondre à la structure.
   String code;
   String desigantion;
 
@@ -51,26 +235,15 @@ class Detailproduit extends StatefulWidget {
 }
 
 class _DetailproduitState extends State<Detailproduit> {
-  // Variables d'état
-  // File? _image; // Supprimé car non utilisé dans cette page (insertion d'image)
-
-  // Variables pour la gestion des données produit
   ProductDetail? _productDetail;
   bool _isLoading = true;
   String? _errorMessage;
   bool isTechnician = false;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   getrecord(); // Inutilisé pour cette page, donc supprimé de l'initialisation
-  //   getrecords(); // Remplacé par _fetchProductDetails
-  // }
-
   @override
   void initState() {
     super.initState();
-    _fetchProductDetails(); // Appel pour charger les détails du produit
+    _fetchProductDetails();
     _getRole();
   }
 
@@ -81,22 +254,10 @@ class _DetailproduitState extends State<Detailproduit> {
     });
   }
 
-  // Fonctions de l'API (adaptées et renommées pour la clarté)
-
-  // Ancienne fetchdata() pour mouvement, non utilisée dans ce contexte de détail produit, donc non incluse.
-  // Future<List<Map<String, dynamic>>> fetchdata() async { /* ... */ }
-
-  // savadatas() pour l'insertion, non utilisée dans cette page de détail, donc non incluse.
-  // Future<void> savadatas() async { /* ... */ }
-
-  // getrecord() pour les catégories, non utilisée dans cette page, donc non incluse.
-  // Future<void> getrecord() async { /* ... */ }
-
-  // Remplace getrecords() avec une gestion d'état améliorée
   Future<void> _fetchProductDetails() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null; // Réinitialiser les messages d'erreur précédents
+      _errorMessage = null;
     });
 
     final url = "$Adress_IP/PRODUIT/gettrie.php";
@@ -138,7 +299,6 @@ class _DetailproduitState extends State<Detailproduit> {
     }
   }
 
-  // Remplace delrecord()
   Future<void> _deleteProduct() async {
     var url = "$Adress_IP/PRODUIT/deleteproduit.php";
     try {
@@ -147,13 +307,11 @@ class _DetailproduitState extends State<Detailproduit> {
 
       if (response.statusCode == 200) {
         _showSnackBar("Produit supprimé avec succès !");
-        // Naviguer vers l'écran d'accueil après suppression réussie
         // ignore: use_build_context_synchronously
         Navigator.pushAndRemoveUntil(
           context,
           CupertinoPageRoute(builder: (context) => const HomeBarAdmin()),
-          (Route<dynamic> route) =>
-              false, // Supprime toutes les routes précédentes
+          (Route<dynamic> route) => false,
         );
       } else {
         _showSnackBar("Erreur lors de la suppression: ${response.statusCode}");
@@ -163,7 +321,6 @@ class _DetailproduitState extends State<Detailproduit> {
     }
   }
 
-  // Remplace bar()
   void _showSnackBar(String description) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -173,35 +330,32 @@ class _DetailproduitState extends State<Detailproduit> {
     );
   }
 
-  // Méthode pour afficher la boîte de dialogue de confirmation de suppression
   void _confirmDelete() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirmer la suppression"),
-          // Contenu centré dans la boîte de dialogue
           content: Center(
-            widthFactor:
-                1.0, // Permet au Center de prendre toute la largeur disponible
+            widthFactor: 1.0,
             child: Text(
               "Êtes-vous sûr de vouloir supprimer ${widget.desigantion} ?",
-              textAlign: TextAlign.center, // Centre le texte lui-même
+              textAlign: TextAlign.center,
             ),
           ),
           actions: <Widget>[
             TextButton(
               child: const Text("Annuler"),
               onPressed: () {
-                Navigator.of(context).pop(); // Fermer la boîte de dialogue
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text("Supprimer"),
               onPressed: () {
-                Navigator.of(context).pop(); // Fermer la boîte de dialogue
-                _deleteProduct(); // Procéder à la suppression
+                Navigator.of(context).pop();
+                _deleteProduct();
               },
             ),
           ],
@@ -210,7 +364,28 @@ class _DetailproduitState extends State<Detailproduit> {
     );
   }
 
-  // Widget utilitaire pour afficher les lignes de détail
+  // --- NEW: Function to navigate to EditProductScreen ---
+  void _navigateToEditProduct() async {
+    if (_productDetail == null) {
+      _showSnackBar("Impossible de modifier: Détails du produit non chargés.");
+      return;
+    }
+
+    // Use push to go to the edit screen and await its result
+    final bool? result = await Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => EditProductScreen(product: _productDetail!),
+      ),
+    );
+
+    // If result is true, it means the product was updated, so refresh details
+    if (result == true) {
+      _fetchProductDetails();
+    }
+  }
+  // --- END NEW ---
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -225,10 +400,9 @@ class _DetailproduitState extends State<Detailproduit> {
                 color: Colors.black87),
           ),
           Flexible(
-            // Utiliser Flexible pour éviter les débordements de texte long
             child: Text(
               value,
-              textAlign: TextAlign.end, // Aligner le texte à droite
+              textAlign: TextAlign.end,
               style: TextStyle(fontSize: 16, color: Colors.grey[700]),
             ),
           ),
@@ -243,13 +417,22 @@ class _DetailproduitState extends State<Detailproduit> {
       appBar: AppBar(
         title: Text(widget.desigantion),
         actions: [
+          // --- NEW: Edit Button ---
+          if (!isTechnician) // Only show edit button if not a technician
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _navigateToEditProduct,
+              tooltip: "Modifier le produit",
+              color: Colors.blue, // Distinct color for edit
+            ),
+          // --- END NEW ---
+
           if (!isTechnician)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () => _confirmDelete(), // Appel de la confirmation
+              onPressed: () => _confirmDelete(),
               tooltip: "Supprimer le produit",
-              color:
-                  Colors.redAccent, // Couleur distinctive pour la suppression
+              color: Colors.redAccent,
             ),
         ],
       ),
@@ -270,17 +453,14 @@ class _DetailproduitState extends State<Detailproduit> {
                         child: Text("Détails du produit introuvables."))
                     : SingleChildScrollView(
                         child: Padding(
-                          padding: const EdgeInsets.all(
-                              16.0), // Padding général plus généreux
+                          padding: const EdgeInsets.all(16.0),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Center(
                                 child: Container(
-                                  margin: const EdgeInsets.only(
-                                      bottom: 20), // Marge en bas de l'image
-                                  // Ajustement de la largeur et hauteur pour une meilleure adaptabilité
+                                  margin: const EdgeInsets.only(bottom: 20),
                                   width:
                                       MediaQuery.of(context).size.width * 0.9,
                                   height:
@@ -297,14 +477,12 @@ class _DetailproduitState extends State<Detailproduit> {
                                     ],
                                   ),
                                   child: ClipRRect(
-                                    // Pour que l'image respecte le BorderRadius
                                     borderRadius: BorderRadius.circular(12),
                                     child: _productDetail!.imageUrl != null &&
                                             _productDetail!.imageUrl!.isNotEmpty
                                         ? Image.network(
                                             _productDetail!.imageUrl!,
-                                            fit: BoxFit
-                                                .cover, // Mieux pour les images
+                                            fit: BoxFit.cover,
                                             loadingBuilder: (context, child,
                                                 loadingProgress) {
                                               if (loadingProgress == null)
@@ -349,8 +527,7 @@ class _DetailproduitState extends State<Detailproduit> {
                                 child: Text(
                                   _productDetail!.designation,
                                   style: const TextStyle(
-                                    fontSize:
-                                        26, // Taille de police légèrement augmentée
+                                    fontSize: 26,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -365,14 +542,11 @@ class _DetailproduitState extends State<Detailproduit> {
                                       fontSize: 16, color: Colors.grey[700]),
                                 ),
                               ),
-                              const Divider(
-                                  height: 30,
-                                  thickness: 1), // Ligne de séparation
+                              const Divider(height: 30, thickness: 1),
                               _buildDetailRow("Quantité actuelle :",
                                   _productDetail!.quantite.toString()),
                               _buildDetailRow("Prix d'achat actuel :",
                                   "${_productDetail!.prixu.toStringAsFixed(2)} \$"),
-                              // Vous pouvez ajouter d'autres lignes de détail ici si nécessaire
                             ],
                           ),
                         ),

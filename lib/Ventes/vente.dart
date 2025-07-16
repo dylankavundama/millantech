@@ -368,7 +368,14 @@ class _VentesState extends State<Ventes> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold(      appBar: AppBar(
+        title: const Text(
+          'Ventes',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+     
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ventes.isEmpty

@@ -161,7 +161,14 @@ class _HomeClientState extends State<HomeClient> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold(      appBar: AppBar(
+        title: const Text(
+          'Clients',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+ 
+      ),
       body: RefreshIndicator(
         onRefresh: _loadClients, // Use _loadClients for refresh
         child: _isLoading // Afficher le loader si _isLoading est vrai
