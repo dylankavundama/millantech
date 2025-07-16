@@ -100,11 +100,16 @@ class _AddProductState extends State<AddProduct> {
         'designation': _nameController.text.trim(),
         'detail': _detailController.text.trim(),
         'categorie_id': _selectedCategoryId!,
-        'quantite': _quantityController.text.trim().isEmpty ? '0' : _quantityController.text.trim(),
-        'prixu': _priceController.text.trim().isEmpty ? '0' : _priceController.text.trim(),
+        'quantite': _quantityController.text.trim().isEmpty
+            ? '0'
+            : _quantityController.text.trim(),
+        'prixu': _priceController.text.trim().isEmpty
+            ? '0'
+            : _priceController.text.trim(),
       });
       // Ajout de l'image sélectionnée
-      request.files.add(await http.MultipartFile.fromPath('image', _pickedImageFile!.path));
+      request.files.add(
+          await http.MultipartFile.fromPath('image', _pickedImageFile!.path));
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
@@ -120,10 +125,12 @@ class _AddProductState extends State<AddProduct> {
             (route) => false,
           );
         } else {
-          throw Exception(jsonResponse['message'] ?? 'Erreur inconnue lors de l\'ajout.');
+          throw Exception(
+              jsonResponse['message'] ?? 'Erreur inconnue lors de l\'ajout.');
         }
       } else {
-        throw Exception('Erreur serveur: ${response.statusCode} - $responseBody');
+        throw Exception(
+            'Erreur serveur: ${response.statusCode} - $responseBody');
       }
     } catch (e) {
       _showSnackBar('Erreur: ${e.toString().replaceAll('Exception: ', '')}');
@@ -148,9 +155,11 @@ class _AddProductState extends State<AddProduct> {
     setState(() => _isLoadingCategories = true);
 
     try {
-      final response = await http.get(
-        Uri.parse("$Adress_IP/CATEGORIEPROD/getcategorie.php"),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse("$Adress_IP/CATEGORIEPROD/getcategorie.php"),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -158,7 +167,8 @@ class _AddProductState extends State<AddProduct> {
           setState(() {
             _categories = List<Map<String, dynamic>>.from(data);
             if (_categories.isNotEmpty) {
-              _selectedCategoryId = _categories.first['id_categorie'].toString();
+              _selectedCategoryId =
+                  _categories.first['id_categorie'].toString();
             }
           });
         } else {
@@ -213,7 +223,8 @@ class _AddProductState extends State<AddProduct> {
       return Container(
         height: imageContainerHeight,
         color: Colors.grey.shade200,
-        child: const Center(child: Icon(Icons.image, size: 60, color: Colors.grey)),
+        child: const Center(
+            child: Icon(Icons.image, size: 60, color: Colors.grey)),
       );
     }
     return Image.network(
@@ -223,7 +234,8 @@ class _AddProductState extends State<AddProduct> {
       errorBuilder: (context, error, stackTrace) => Container(
         height: imageContainerHeight,
         color: Colors.grey.shade200,
-        child: const Center(child: Icon(Icons.broken_image, size: 60, color: Colors.red)),
+        child: const Center(
+            child: Icon(Icons.broken_image, size: 60, color: Colors.red)),
       ),
     );
   }
@@ -251,7 +263,8 @@ class _AddProductState extends State<AddProduct> {
                     if (_imageInputError != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(_imageInputError!, style: const TextStyle(color: Colors.red)),
+                        child: Text(_imageInputError!,
+                            style: const TextStyle(color: Colors.red)),
                       ),
                     const SizedBox(height: fieldSpacing),
                     _buildFormField(
@@ -313,7 +326,8 @@ class _AddProductState extends State<AddProduct> {
                       items: _categories.map((cat) {
                         return DropdownMenuItem<String>(
                           value: cat['id_categorie'].toString(),
-                          child: Text(cat['nom_categorie'] ?? cat['designation'] ?? ''),
+                          child: Text(
+                              cat['nom_categorie'] ?? cat['designation'] ?? ''),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -326,7 +340,8 @@ class _AddProductState extends State<AddProduct> {
                         prefixIcon: Icon(Icons.category),
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => value == null ? 'Sélectionnez une catégorie.' : null,
+                      validator: (value) =>
+                          value == null ? 'Sélectionnez une catégorie.' : null,
                     ),
                     const SizedBox(height: fieldSpacing * 2),
                     SizedBox(
@@ -336,15 +351,19 @@ class _AddProductState extends State<AddProduct> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Icon(Icons.save),
-                        label: Text(_isSavingProduct ? 'Enregistrement...' : 'Enregistrer'),
+                        label: Text(_isSavingProduct
+                            ? 'Enregistrement...'
+                            : 'Enregistrer'),
                         onPressed: _isSavingProduct ? null : _saveProduct,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
-                          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                       ),
                     ),
